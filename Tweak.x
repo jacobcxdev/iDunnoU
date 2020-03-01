@@ -1,4 +1,21 @@
+//
+//  Tweak.x
+//  iDunnoU
+//
+//  Created by Jacob Clayden on 08/02/2020.
+//  Copyright © 2020 JacobCXDev. All rights reserved.
+//
+
 #import <UIKit/UIKit.h>
+
+// NSUserDefaults Interfaces
+
+@interface NSUserDefaults (FBSpNOsor)
+- (NSNumber *)objectForKey:(NSString *)key inDomain:(NSString *)domain;
+- (void)setObject:(id)value forKey:(NSString *)key inDomain:(NSString *)domain;
+@end
+
+// Messages Interfaces
 
 @interface CKConversation : NSObject
 - (BOOL)isKnownSender;
@@ -13,9 +30,13 @@
 - (void)updateConversationList;
 @end
 
+// Static Variables
+
 static bool showKnownArray = true;
 static UIButton *button;
 static UIBarButtonItem *bbi;
+
+// Messages Hooks
 
 %hook CKConversationList
 - (NSMutableArray *)conversations {
@@ -39,9 +60,12 @@ static UIBarButtonItem *bbi;
 		if (!bbi) {
 			if (!button) {
 				button = [UIButton buttonWithType:UIButtonTypeCustom];
-				[button setImage:[UIImage systemImageNamed:@"bubble.left.fill"] forState:UIControlStateNormal];
-				[button setImage:[UIImage systemImageNamed:@"text.bubble.fill"] forState:UIControlStateSelected];
+				[button setImage:[UIImage systemImageNamed:@"person.crop.circle"] forState:UIControlStateNormal];
+				[button setImage:[UIImage systemImageNamed:@"questionmark.circle"] forState:UIControlStateSelected];
 				[button addTarget:self action:@selector(toggleShowKnownArray) forControlEvents:UIControlEventTouchUpInside];
+				button.backgroundColor = [UIColor secondarySystemBackgroundColor];
+				button.frame = CGRectMake(0, 0, 30, 30);
+				button.layer.cornerRadius = 15;
 			}
 			bbi = [[UIBarButtonItem alloc] initWithCustomView:button];
 		}
@@ -55,3 +79,14 @@ static UIBarButtonItem *bbi;
 	[self updateConversationList];
 }
 %end
+
+// Constructor
+
+%ctor {
+	NSMutableDictionary *settings = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.jacobcxdev.idunnou.plist"];
+	bool enabled = [settings objectForKey:@"enabled"] ? [[settings objectForKey:@"enabled"] boolValue] : true;
+	if (!enabled) return;
+	%init();
+	
+	NSLog(@"iDunnoU loaded");
+}

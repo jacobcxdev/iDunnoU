@@ -1,7 +1,7 @@
 Package: com.jacobcxdev.idunnou
 Name: iDunnoU
 Depends: mobilesubstrate
-Version: 1.0.0
+Version: 1.1.0
 Architecture: iphoneos-arm
 Description: A tweak for Messages to show/hide unknown senders.
 Maintainer: JacobCXDev

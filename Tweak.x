@@ -63,7 +63,7 @@ static UIBarButtonItem *bbi;
 				[button setImage:[UIImage systemImageNamed:@"person.crop.circle"] forState:UIControlStateNormal];
 				[button setImage:[UIImage systemImageNamed:@"questionmark.circle"] forState:UIControlStateSelected];
 				[button addTarget:self action:@selector(toggleShowKnownArray) forControlEvents:UIControlEventTouchUpInside];
-				button.backgroundColor = [UIColor secondarySystemBackgroundColor];
+				button.backgroundColor = [UIColor secondarySystemFillColor];
 				button.frame = CGRectMake(0, 0, 30, 30);
 				button.layer.cornerRadius = 15;
 			}

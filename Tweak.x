@@ -11,6 +11,12 @@
 #import "iDUBadgeButton.h"
 #import "iDUNotificationCentre.h"
 
+// NSUbiquitousKeyValueStore Interfaces
+
+@interface NSUbiquitousKeyValueStore (iDunnoU)
+- (instancetype)initWithBundleIdentifier:(NSString *)bundleIdentifier;
+@end
+
 // Messages Interfaces
 
 @interface CNContact : NSObject
@@ -110,48 +116,63 @@ static void updateBadgeCount() {
     button.badgeCount = shouldHideButtonBadge ? 0 : showUnknownArray ? knownUnreadCount : unknownUnreadCount;
 }
 
-static void persistDefaultsState() {
-    if (!userDefaults) return;
-    userDefaults = [NSUserDefaults standardUserDefaults];
-    [userDefaults setBool:showUnknownArray forKey:showUnknownArrayKey];
-    [userDefaults setInteger:knownUnreadCount forKey:knownUnreadCountKey];
-    [userDefaults setInteger:unknownUnreadCount forKey:unknownUnreadCountKey];
-    [userDefaults setObject:conversationBlacklist forKey:conversationBlacklistKey];
-    [userDefaults setObject:conversationWhitelist forKey:conversationWhitelistKey];
-}
-
-static void persistiCloudState() {
-    if (!userDefaults) return;
-    NSUbiquitousKeyValueStore *store = [NSUbiquitousKeyValueStore defaultStore];
-    [store setArray:[userDefaults arrayForKey:conversationBlacklistKey] forKey:conversationBlacklistKey];
-    [store setArray:[userDefaults arrayForKey:conversationWhitelistKey] forKey:conversationWhitelistKey];
-    HBLogDebug(@"conversationBlacklistKey iCloud %@", [store arrayForKey:conversationBlacklistKey]);
-    HBLogDebug(@"conversationBlacklistKey %@", conversationBlacklist);
-    HBLogDebug(@"conversationWhitelistKey iCloud %@", [store arrayForKey:conversationWhitelistKey]);
-    HBLogDebug(@"conversationWhitelistKey %@", conversationWhitelist);
-    HBLogDebug(@"Synchronize %@", [store synchronize] ? @"true" : @"false");
-}
-
 static void restoreDefaultsState() {
     if (!userDefaults) return;
+    HBLogDebug(@"————————————————————————————————————————————————————————");
+    HBLogDebug(@"restoreDefaultsState called");
     showUnknownArray = shouldSecureUnknownList ? false : [userDefaults boolForKey:showUnknownArrayKey];
     knownUnreadCount = [userDefaults integerForKey:knownUnreadCountKey];
     unknownUnreadCount = [userDefaults integerForKey:unknownUnreadCountKey];
     conversationBlacklist = [userDefaults arrayForKey:conversationBlacklistKey] ? [[userDefaults arrayForKey:conversationBlacklistKey] mutableCopy] : [[NSMutableArray alloc] init];
     conversationWhitelist = [userDefaults arrayForKey:conversationWhitelistKey] ? [[userDefaults arrayForKey:conversationWhitelistKey] mutableCopy] : [[NSMutableArray alloc] init];
+    HBLogDebug(@"conversationBlacklist userDefaults %@", [userDefaults arrayForKey:conversationBlacklistKey]);
+    HBLogDebug(@"conversationBlacklist %@", conversationBlacklist);
+    HBLogDebug(@"conversationWhitelist userDefaults %@", [userDefaults arrayForKey:conversationWhitelistKey]);
+    HBLogDebug(@"conversationWhitelist %@", conversationWhitelist);
 }
 
 static void restoreiCloudState() {
-    HBLogDebug(@"restoreiCloudState called, userDefaults = %@", userDefaults);
     if (!userDefaults) return;
-    NSUbiquitousKeyValueStore *store = [NSUbiquitousKeyValueStore defaultStore];
+    HBLogDebug(@"————————————————————————————————————————————————————————");
+    HBLogDebug(@"restoreiCloudState called");
+    NSUbiquitousKeyValueStore *store = [[NSUbiquitousKeyValueStore alloc] initWithBundleIdentifier:@"com.jacobcxdev.idunnou"];
     HBLogDebug(@"Synchronize %@", [store synchronize] ? @"true" : @"false");
     conversationBlacklist = [store arrayForKey:conversationBlacklistKey] ? [[store arrayForKey:conversationBlacklistKey] mutableCopy] : [[NSMutableArray alloc] init];
     conversationWhitelist = [store arrayForKey:conversationWhitelistKey] ? [[store arrayForKey:conversationWhitelistKey] mutableCopy] : [[NSMutableArray alloc] init];
-    HBLogDebug(@"conversationBlacklistKey iCloud %@", [store arrayForKey:conversationBlacklistKey]);
-    HBLogDebug(@"conversationBlacklistKey %@", conversationBlacklist);
-    HBLogDebug(@"conversationWhitelistKey iCloud %@", [store arrayForKey:conversationWhitelistKey]);
-    HBLogDebug(@"conversationWhitelistKey %@", conversationWhitelist);
+    HBLogDebug(@"conversationBlacklist iCloud %@", [store arrayForKey:conversationBlacklistKey]);
+    HBLogDebug(@"conversationBlacklist %@", conversationBlacklist);
+    HBLogDebug(@"conversationWhitelist iCloud %@", [store arrayForKey:conversationWhitelistKey]);
+    HBLogDebug(@"conversationWhitelist %@", conversationWhitelist);
+}
+
+static void persistDefaultsState() {
+    if (!userDefaults) return;
+    HBLogDebug(@"————————————————————————————————————————————————————————");
+    HBLogDebug(@"persistDefaultsState called");
+    [userDefaults setBool:showUnknownArray forKey:showUnknownArrayKey];
+    [userDefaults setInteger:knownUnreadCount forKey:knownUnreadCountKey];
+    [userDefaults setInteger:unknownUnreadCount forKey:unknownUnreadCountKey];
+    [userDefaults setObject:conversationBlacklist forKey:conversationBlacklistKey];
+    [userDefaults setObject:conversationWhitelist forKey:conversationWhitelistKey];
+    HBLogDebug(@"conversationBlacklist userDefaults %@", [userDefaults arrayForKey:conversationBlacklistKey]);
+    HBLogDebug(@"conversationBlacklist %@", conversationBlacklist);
+    HBLogDebug(@"conversationWhitelist userDefaults %@", [userDefaults arrayForKey:conversationWhitelistKey]);
+    HBLogDebug(@"conversationWhitelist %@", conversationWhitelist);
+}
+
+static void persistiCloudState() {
+    if (!userDefaults) return;
+    HBLogDebug(@"————————————————————————————————————————————————————————");
+    HBLogDebug(@"persistiCloudState called");
+    NSUbiquitousKeyValueStore *store = [[NSUbiquitousKeyValueStore alloc] initWithBundleIdentifier:@"com.jacobcxdev.idunnou"];
+    [store setArray:conversationBlacklist forKey:conversationBlacklistKey];
+    [store setArray:conversationWhitelist forKey:conversationWhitelistKey];
+    HBLogDebug(@"conversationBlacklist iCloud %@", [store arrayForKey:conversationBlacklistKey]);
+    HBLogDebug(@"conversationBlacklist %@", conversationBlacklist);
+    HBLogDebug(@"conversationWhitelist iCloud %@", [store arrayForKey:conversationWhitelistKey]);
+    HBLogDebug(@"conversationWhitelist %@", conversationWhitelist);
+    HBLogDebug(@"Synchronize %@", [store synchronize] ? @"true" : @"false");
+	restoreiCloudState();
 }
 
 // Messages Hooks

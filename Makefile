@@ -1,12 +1,12 @@
-ARCHS = arm64 arm64e
-TARGET = iphone::13.0
-INSTALL_TARGET_PROCESSES = MobileSMS Preferences
+export ARCHS = arm64 arm64e
+export TARGET = iphone::13.0
+INSTALL_TARGET_PROCESSES = MobileSMS imagent tccd Preferences
 
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = iDunnoU
 
-iDunnoU_FILES = Tweak.x
+iDunnoU_FILES = Tweak.x $(wildcard *.m)
 iDunnoU_CFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/tweak.mk

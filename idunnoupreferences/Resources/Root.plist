@@ -38,6 +38,54 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
+			<string>Badge Preferences</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.jacobcxdev.idunnou</string>
+			<key>key</key>
+			<string>shouldHideUnknownUnreadCountFromSBBadge</string>
+			<key>label</key>
+			<string>Hide badges from unknown senders</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.jacobcxdev.idunnou</string>
+			<key>key</key>
+			<string>shouldHideButtonBadge</string>
+			<key>label</key>
+			<string>Hide toggle button badge</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Security Preferences</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.jacobcxdev.idunnou</string>
+			<key>key</key>
+			<string>shouldSecureUnknownList</string>
+			<key>label</key>
+			<string>Secure unknown sender list</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
 			<string>Developer</string>
 			<key>footerText</key>
 			<string>Copyright © 2020 JacobCXDev. All rights reserved.</string>
@@ -48,7 +96,7 @@
 			<key>cellClass</key>
 			<string>iDUTwitterCell</string>
 			<key>label</key>
-			<string>Follow me on Twitter!</string>
+			<string>Follow me on Twitter</string>
 			<key>username</key>
 			<string>jcxdev</string>
 			<key>shouldDisplayAvatar</key>
@@ -58,9 +106,29 @@
 			<key>cellClass</key>
 			<string>iDUPayPalCell</string>
 			<key>label</key>
-			<string>Donate to me :)</string>
+			<string>Donate to me via PayPal</string>
 			<key>username</key>
 			<string>jacobcxdev</string>
+			<key>shouldDisplayAvatar</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>iDUCashAppCell</string>
+			<key>label</key>
+			<string>Donate to me via CashApp</string>
+			<key>cashTag</key>
+			<string>£JacobCXDev</string>
+			<key>shouldDisplayAvatar</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>iDUMailCell</string>
+			<key>label</key>
+			<string>Email me for support</string>
+			<key>emailAddress</key>
+			<string>jacobcxdev@gmail.com</string>
 			<key>shouldDisplayAvatar</key>
 			<true/>
 		</dict>

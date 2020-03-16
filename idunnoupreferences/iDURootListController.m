@@ -11,13 +11,17 @@
 }
 - (void)viewDidLoad {
 	[super viewDidLoad];
-	UIBarButtonItem *button = [[UIBarButtonItem alloc] initWithTitle:@"Kill Messages" style:UIBarButtonItemStylePlain target:self action:@selector(killallMobileSMS)];
+	UIBarButtonItem *button = [[UIBarButtonItem alloc] initWithTitle:@"Respring" style:UIBarButtonItemStylePlain target:self action:@selector(killall)];
 	self.navigationItem.rightBarButtonItem = button;
 }
-- (void)killallMobileSMS {
-	NSTask *killall = [[NSTask alloc] init];
-	[killall setLaunchPath:@"/usr/bin/killall"];
-	[killall setArguments:@[@"-9", @"MobileSMS"]];
-	[killall launch];
+- (void)killall {
+	NSTask *killallIMAgent = [[NSTask alloc] init];
+	[killallIMAgent setLaunchPath:@"/usr/bin/killall"];
+	[killallIMAgent setArguments:@[@"-9", @"imagent"]];
+	[killallIMAgent launch];
+	NSTask *killallSpringBoard = [[NSTask alloc] init];
+	[killallSpringBoard setLaunchPath:@"/usr/bin/killall"];
+	[killallSpringBoard setArguments:@[@"-9", @"SpringBoard"]];
+	[killallSpringBoard launch];
 }
 @end

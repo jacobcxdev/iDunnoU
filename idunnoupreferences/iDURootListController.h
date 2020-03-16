@@ -3,5 +3,5 @@
 #import "iDUPackageInfo.h"
 
 @interface iDURootListController : PSListController
-- (void)killallMobileSMS;
+- (void)killall;
 @end

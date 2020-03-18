@@ -11,12 +11,12 @@
 + (instancetype)centre;
 + (instancetype)centreWithPostHandler:(NSDictionary * (^)(NSString *))postHandler receivedHandler:(void (^)(NSNotification *))receivedHandler;
 - (instancetype)initWithPostHandler:(NSDictionary * (^)(NSString *))postHandler receivedHandler:(void (^)(NSNotification *))receivedHandler;
-- (void)observeNotificationsWithName:(NSString *)name;
-- (void)observeNotificationsWithName:(NSString *)name object:(id)object;
-- (void)postNotificationUsingPostHandlerWithName:(NSString *)name;
-- (void)postNotificationWithName:(NSString *)name;
-- (void)postNotificationWithName:(NSString *)name userInfo:(NSDictionary *)userInfo;
+- (void)observeNotificationsWithName:(NSString *)name from:(NSNotificationCenter *)nsNotificationCenter;
+- (void)observeNotificationsWithName:(NSString *)name object:(id)object from:(NSNotificationCenter *)nsNotificationCenter;
+- (void)postNotificationUsingPostHandlerWithName:(NSString *)name to:(NSNotificationCenter *)nsNotificationCenter;
+- (void)postNotificationWithName:(NSString *)name to:(NSNotificationCenter *)nsNotificationCenter;
+- (void)postNotificationWithName:(NSString *)name userInfo:(NSDictionary *)userInfo to:(NSNotificationCenter *)nsNotificationCenter;
 - (void)receiveNotification:(NSNotification *)notification;
-- (void)stopObservingNotifications;
-- (void)stopObservingNotificationsWithName:(NSString *)name;
+- (void)stopObservingNotificationsFrom:(NSNotificationCenter *)nsNotificationCenter;
+- (void)stopObservingNotificationsWithName:(NSString *)name from:(NSNotificationCenter *)nsNotificationCenter;
 @end

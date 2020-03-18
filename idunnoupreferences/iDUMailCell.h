@@ -1,6 +1,6 @@
 #import "iDULinkCell.h"
 
 @interface iDUMailCell : iDULinkCell {
-	    NSString *_emailAddress;
+    NSString *_emailAddress;
 }
 @end

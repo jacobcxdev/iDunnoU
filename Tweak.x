@@ -101,13 +101,15 @@ static NSUInteger knownUnreadCount = 0;
 static NSString *knownUnreadCountKey = @"knownUnreadCount";
 static NSUInteger unknownUnreadCount = 0;
 static NSString *unknownUnreadCountKey = @"unknownUnreadCount";
-static NSString *updateNotificationName = @"com.jacobcxdev.idunnou.update";
-static NSString *updateRequestNotificationName = @"com.jacobcxdev.idunnou.update.request";
-static NSString *updateiCloudNotificationName = @"com.jacobcxdev.idunnou.updateiCloud";
-static NSString *updateiCloudPersistNotificationName = @"com.jacobcxdev.idunnou.updateiCloud.persist";
-static NSString *updateiCloudRestoreNotificationName = @"com.jacobcxdev.idunnou.updateiCloud.restore";
+static NSString *varUpdateNotificationName = @"com.jacobcxdev.idunnou.var.update";
+static NSString *varRequestNotificationName = @"com.jacobcxdev.idunnou.var.request";
+static NSString *iCloudPersistNotificationName = @"com.jacobcxdev.idunnou.iCloud.persist";
+static NSString *iCloudRestoreNotificationName = @"com.jacobcxdev.idunnou.iCloud.restore";
+static NSString *userDefaultsDidUpdateNotificationName = @"com.jacobcxdev.idunnou.userDefaults.didUpdate";
 static iDUNotificationCentre *notificationCentre;
 static NSUserDefaults *userDefaults;
+static NSUbiquitousKeyValueStore *store;
+static CKConversationListController *ckclc;
 static IMDBadgeUtilities *imdbu;
 static iDUBadgeButton *button;
 static UIBarButtonItem *bbi;
@@ -132,10 +134,9 @@ static void restoreDefaultsState() {
 }
 
 static void restoreiCloudState() {
-    if (!userDefaults) return;
+    if (!store) return;
     HBLogDebug(@"————————————————————————————————————————————————————————");
     HBLogDebug(@"restoreiCloudState called");
-    NSUbiquitousKeyValueStore *store = [[NSUbiquitousKeyValueStore alloc] initWithBundleIdentifier:@"com.jacobcxdev.idunnou"];
     HBLogDebug(@"Synchronize %@", [store synchronize] ? @"true" : @"false");
     conversationBlacklist = [store arrayForKey:conversationBlacklistKey] ? [[store arrayForKey:conversationBlacklistKey] mutableCopy] : [[NSMutableArray alloc] init];
     conversationWhitelist = [store arrayForKey:conversationWhitelistKey] ? [[store arrayForKey:conversationWhitelistKey] mutableCopy] : [[NSMutableArray alloc] init];
@@ -161,17 +162,15 @@ static void persistDefaultsState() {
 }
 
 static void persistiCloudState() {
-    if (!userDefaults) return;
+    if (!store) return;
     HBLogDebug(@"————————————————————————————————————————————————————————");
     HBLogDebug(@"persistiCloudState called");
-    NSUbiquitousKeyValueStore *store = [[NSUbiquitousKeyValueStore alloc] initWithBundleIdentifier:@"com.jacobcxdev.idunnou"];
     [store setArray:conversationBlacklist forKey:conversationBlacklistKey];
     [store setArray:conversationWhitelist forKey:conversationWhitelistKey];
     HBLogDebug(@"conversationBlacklist iCloud %@", [store arrayForKey:conversationBlacklistKey]);
     HBLogDebug(@"conversationBlacklist %@", conversationBlacklist);
     HBLogDebug(@"conversationWhitelist iCloud %@", [store arrayForKey:conversationWhitelistKey]);
     HBLogDebug(@"conversationWhitelist %@", conversationWhitelist);
-    HBLogDebug(@"Synchronize %@", [store synchronize] ? @"true" : @"false");
 	restoreiCloudState();
 }
 
@@ -222,12 +221,17 @@ static void persistiCloudState() {
         }
     }
     updateBadgeCount();
-    [notificationCentre postNotificationUsingPostHandlerWithName:updateNotificationName];
+    [notificationCentre postNotificationUsingPostHandlerWithName:varUpdateNotificationName];
     return showUnknownArray ? unknownArray : knownArray;
 }
 %end
 
 %hook CKConversationListController
+- (instancetype)init {
+    id orig = %orig;
+    ckclc = orig;
+    return orig;
+}
 - (void)_chatUnreadCountDidChange:(NSNotification *)notification {
     [[self conversationList] conversations];
     return %orig;
@@ -266,7 +270,7 @@ static void persistiCloudState() {
         }
         [self updateConversationList];
         persistDefaultsState();
-        [notificationCentre postNotificationWithName:updateiCloudPersistNotificationName];
+        [notificationCentre postNotificationWithName:iCloudPersistNotificationName];
         completionHandler(true);
     }];
     blacklistAction.backgroundColor = [conversation isBlacklisted] || (![conversation isKnownSender] && ![conversation isWhitelisted]) ? [UIColor systemTealColor] : [UIColor systemBlueColor];
@@ -309,7 +313,6 @@ static void persistiCloudState() {
 %hook SMSApplication
 - (void)applicationWillTerminate {
     persistDefaultsState();
-    [notificationCentre postNotificationWithName:updateiCloudPersistNotificationName];
     return %orig;
 }
 %end
@@ -348,8 +351,6 @@ static void persistiCloudState() {
 // Constructor
 
 %ctor {
-    NSLog(@"Hello from iDunnoU");
-
     if ([[NSBundle mainBundle].bundleIdentifier isEqual:@"com.apple.tccd"]) %init(TCCd);
     else {
         NSMutableDictionary *settings = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.jacobcxdev.idunnou.plist"];
@@ -366,47 +367,59 @@ static void persistiCloudState() {
         if ([mainBundleID isEqualToString:@"com.apple.MobileSMS"]) {
             userDefaults = [NSUserDefaults standardUserDefaults];
             notificationCentre.postHandler = ^NSDictionary *(NSString *name) {
-                if ([name isEqualToString:updateNotificationName]) {
+                if ([name isEqualToString:varUpdateNotificationName]) {
                     return @{
                         shouldHideUnknownUnreadCountFromSBBadgeKey: @(shouldHideUnknownUnreadCountFromSBBadge),
                         showUnknownArrayKey: @(showUnknownArray),
                         knownUnreadCountKey: @(knownUnreadCount),
                         unknownUnreadCountKey: @(unknownUnreadCount)
                     };
-                } else if ([name isEqualToString:updateiCloudNotificationName]) restoreDefaultsState();
+                }
                 return nil;
             };
             notificationCentre.receivedHandler = ^(NSNotification *notification) {
-                if ([notification.name isEqualToString:updateRequestNotificationName]) {
-                    [notificationCentre postNotificationUsingPostHandlerWithName:updateNotificationName];
+                if ([notification.name isEqualToString:varRequestNotificationName]) {
+                    [notificationCentre postNotificationUsingPostHandlerWithName:varUpdateNotificationName];
+                } else if ([notification.name isEqualToString:userDefaultsDidUpdateNotificationName]) {
+                    restoreDefaultsState();
+                    HBLogDebug(@"Received userDefaultsDidUpdateNotificationName, ckclc = %@", ckclc);
+                    if (ckclc) [ckclc updateConversationList];
                 }
             };
-            [notificationCentre observeNotificationsWithName:updateRequestNotificationName];
-            [notificationCentre observeNotificationsWithName:updateiCloudNotificationName];
-            [notificationCentre postNotificationWithName:updateiCloudRestoreNotificationName];
+            [notificationCentre observeNotificationsWithName:varRequestNotificationName];
+            [notificationCentre observeNotificationsWithName:userDefaultsDidUpdateNotificationName];
+            [notificationCentre postNotificationWithName:iCloudRestoreNotificationName];
             %init(Messages);
         } else if ([mainBundleID isEqualToString:@"com.apple.imagent"]) {
             userDefaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.apple.MobileSMS"];
             notificationCentre.receivedHandler = ^(NSNotification *notification) {
-                if ([notification.name isEqualToString:updateNotificationName]) {
+                if ([notification.name isEqualToString:varUpdateNotificationName]) {
                     shouldHideUnknownUnreadCountFromSBBadge = [notification.userInfo objectForKey:shouldHideUnknownUnreadCountFromSBBadgeKey] && [[notification.userInfo objectForKey:shouldHideUnknownUnreadCountFromSBBadgeKey] boolValue];
                     showUnknownArray = [notification.userInfo objectForKey:showUnknownArrayKey] && [[notification.userInfo objectForKey:showUnknownArrayKey] boolValue];
                     knownUnreadCount = [notification.userInfo objectForKey:knownUnreadCountKey] ? [[notification.userInfo objectForKey:knownUnreadCountKey] intValue] : [userDefaults integerForKey:knownUnreadCountKey];
                     unknownUnreadCount = [notification.userInfo objectForKey:unknownUnreadCountKey] ? [[notification.userInfo objectForKey:unknownUnreadCountKey] intValue] : [userDefaults integerForKey:unknownUnreadCountKey];
                     if (imdbu) [imdbu updateBadgeForUnreadCountChangeIfNeeded:knownUnreadCount + unknownUnreadCount];
-                } else if ([notification.name isEqualToString:updateiCloudPersistNotificationName]) {
-                    restoreDefaultsState();
-                    persistiCloudState();
-                } else if ([notification.name isEqualToString:updateiCloudRestoreNotificationName]) {
-                    restoreiCloudState();
-                    persistDefaultsState();
                 }
             };
-            [notificationCentre observeNotificationsWithName:updateiCloudPersistNotificationName];
-            [notificationCentre observeNotificationsWithName:updateiCloudRestoreNotificationName];
-            [notificationCentre observeNotificationsWithName:updateNotificationName];
-            [notificationCentre postNotificationWithName:updateRequestNotificationName];
+            [notificationCentre observeNotificationsWithName:varUpdateNotificationName];
+            [notificationCentre postNotificationWithName:varRequestNotificationName];
             %init(IMAgent);
+        } else if ([mainBundleID isEqualToString:@"com.apple.springboard"]) {
+            userDefaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.apple.MobileSMS"];
+            store = [NSUbiquitousKeyValueStore defaultStore];
+            notificationCentre.receivedHandler = ^(NSNotification *notification) {
+                if ([notification.name isEqualToString:iCloudPersistNotificationName]) {
+                    restoreDefaultsState();
+                    persistiCloudState();
+                } else if ([notification.name isEqualToString:iCloudRestoreNotificationName] || [notification.name isEqualToString:NSUbiquitousKeyValueStoreDidChangeExternallyNotification]) {
+                    restoreiCloudState();
+                    persistDefaultsState();
+                    [notificationCentre postNotificationWithName:userDefaultsDidUpdateNotificationName];
+                }
+            };
+            [notificationCentre observeNotificationsWithName:iCloudPersistNotificationName];
+            [notificationCentre observeNotificationsWithName:iCloudRestoreNotificationName];
+            // [notificationCentre observeNotificationsWithName:NSUbiquitousKeyValueStoreDidChangeExternallyNotification object:store];
         } else return;
 
         restoreDefaultsState();

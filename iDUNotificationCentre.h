@@ -12,6 +12,7 @@
 + (instancetype)centreWithPostHandler:(NSDictionary * (^)(NSString *))postHandler receivedHandler:(void (^)(NSNotification *))receivedHandler;
 - (instancetype)initWithPostHandler:(NSDictionary * (^)(NSString *))postHandler receivedHandler:(void (^)(NSNotification *))receivedHandler;
 - (void)observeNotificationsWithName:(NSString *)name;
+- (void)observeNotificationsWithName:(NSString *)name object:(id)object;
 - (void)postNotificationUsingPostHandlerWithName:(NSString *)name;
 - (void)postNotificationWithName:(NSString *)name;
 - (void)postNotificationWithName:(NSString *)name userInfo:(NSDictionary *)userInfo;

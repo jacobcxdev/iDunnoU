@@ -2,6 +2,6 @@
 
 @interface iDUGradientHeaderCellBlurContentView : UIView
 {
-	    CAShapeLayer *_borderLayer;
+    CAShapeLayer *_borderLayer;
 }
 @end

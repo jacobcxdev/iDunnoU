@@ -1,6 +1,6 @@
 export ARCHS = arm64 arm64e
 export TARGET = iphone::13.0
-INSTALL_TARGET_PROCESSES = MobileSMS imagent tccd Preferences
+INSTALL_TARGET_PROCESSES = SpringBoard
 
 include $(THEOS)/makefiles/common.mk
 

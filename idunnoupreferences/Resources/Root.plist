@@ -23,8 +23,8 @@
             <string>Main Preferences</string>
         </dict>
         <dict>
-            <key>cell</key>
-            <string>PSSwitchCell</string>
+            <key>cellClass</key>
+            <string>iDUSwitchTableCell</string>
             <key>default</key>
             <true/>
             <key>defaults</key>
@@ -41,8 +41,8 @@
             <string>Badge Preferences</string>
         </dict>
         <dict>
-            <key>cell</key>
-            <string>PSSwitchCell</string>
+            <key>cellClass</key>
+            <string>iDUSwitchTableCell</string>
             <key>default</key>
             <false/>
             <key>defaults</key>
@@ -53,8 +53,8 @@
             <string>Hide badges from unknown senders</string>
         </dict>
         <dict>
-            <key>cell</key>
-            <string>PSSwitchCell</string>
+            <key>cellClass</key>
+            <string>iDUSwitchTableCell</string>
             <key>default</key>
             <false/>
             <key>defaults</key>
@@ -71,8 +71,8 @@
             <string>Security Preferences</string>
         </dict>
         <dict>
-            <key>cell</key>
-            <string>PSSwitchCell</string>
+            <key>cellClass</key>
+            <string>iDUSwitchTableCell</string>
             <key>default</key>
             <false/>
             <key>defaults</key>

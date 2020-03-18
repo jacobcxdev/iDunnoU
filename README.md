@@ -5,6 +5,7 @@ A tweak for Messages — written in Objective-C + Logos.
 * Automatically hide conversations from unknown senders
 * Swipe right on a conversation to hide/unhide
 * Swipe right on a conversation to block/unblock
+* Automatically sync conversation whitelist/blacklist to iCloud
 
 ## Configuration Options
 

@@ -1,5 +1,5 @@
 export ARCHS = arm64 arm64e
-export TARGET = iphone::13.0
+export TARGET = iphone::13.0:latest
 INSTALL_TARGET_PROCESSES = SpringBoard imagent tccd
 
 include $(THEOS)/makefiles/common.mk

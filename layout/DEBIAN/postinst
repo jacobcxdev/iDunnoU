@@ -1,0 +1,10 @@
+#!/bin/sh
+
+echo "Killing imagent"
+killall -9 imagent
+
+echo "Killing tccd"
+killall -9 tccd
+
+echo "Killing SpringBoard"
+killall -9 SpringBoard

@@ -2,70 +2,148 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>items</key>
-	<array>
-		<dict>
-			<key>cellClass</key>
-			<string>iDUGradientHeaderCell</string>
-			<key>subtitle</key>
-			<string>By {Author} — v{Version}</string>
-			<key>icon</key>
-			<string>icon-large.png</string>
-			<key>colors</key>
-			<string>#04BE26,#40D35B,#64E27C,#7CF190,#96F9A7</string>
-			<key>animated</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>label</key>
-			<string>Main Preferences</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<true/>
-			<key>defaults</key>
-			<string>com.jacobcxdev.idunnou</string>
-			<key>key</key>
-			<string>enabled</string>
-			<key>label</key>
-			<string>Enabled</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-			<key>label</key>
-			<string>Developer</string>
-			<key>footerText</key>
-			<string>Copyright © 2020 JacobCXDev. All rights reserved.</string>
-			<key>footerAlignment</key>
-			<integer>1</integer>
-		</dict>
-		<dict>
-			<key>cellClass</key>
-			<string>iDUTwitterCell</string>
-			<key>label</key>
-			<string>Follow me on Twitter!</string>
-			<key>username</key>
-			<string>jcxdev</string>
-			<key>shouldDisplayAvatar</key>
-			<true/>
-		</dict>
-		<dict>
-			<key>cellClass</key>
-			<string>iDUPayPalCell</string>
-			<key>label</key>
-			<string>Donate to me :)</string>
-			<key>username</key>
-			<string>jacobcxdev</string>
-			<key>shouldDisplayAvatar</key>
-			<true/>
-		</dict>
-	</array>
-	<key>title</key>
-	<string>iDunnoU</string>
+    <key>items</key>
+    <array>
+        <dict>
+            <key>cellClass</key>
+            <string>iDUGradientHeaderCell</string>
+            <key>subtitle</key>
+            <string>By {Author} — v{Version}</string>
+            <key>icon</key>
+            <string>icon-large.png</string>
+            <key>colors</key>
+            <string>#04BE26,#40D35B,#64E27C,#7CF190,#96F9A7</string>
+            <key>animated</key>
+            <true/>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Main Preferences</string>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>iDUSwitchTableCell</string>
+            <key>default</key>
+            <true/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.idunnou</string>
+            <key>key</key>
+            <string>enabled</string>
+            <key>label</key>
+            <string>Enabled</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Badge Preferences</string>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>iDUSwitchTableCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.idunnou</string>
+            <key>key</key>
+            <string>shouldHideUnknownUnreadCountFromSBBadge</string>
+            <key>label</key>
+            <string>Hide badges from unknown senders</string>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>iDUSwitchTableCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.idunnou</string>
+            <key>key</key>
+            <string>shouldHideButtonBadge</string>
+            <key>label</key>
+            <string>Hide toggle button badge</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Security Preferences</string>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>iDUSwitchTableCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.idunnou</string>
+            <key>key</key>
+            <string>shouldSecureUnknownList</string>
+            <key>label</key>
+            <string>Secure unknown sender list</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Developer</string>
+            <key>footerText</key>
+            <string>Copyright © 2020 JacobCXDev. All rights reserved.</string>
+            <key>footerAlignment</key>
+            <integer>1</integer>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>iDUTwitterCell</string>
+            <key>label</key>
+            <string>Follow me on Twitter</string>
+            <key>username</key>
+            <string>jcxdev</string>
+            <key>shouldDisplayAvatar</key>
+            <true/>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>iDUPayPalCell</string>
+            <key>label</key>
+            <string>Donate to me via PayPal</string>
+            <key>username</key>
+            <string>jacobcxdev</string>
+            <key>shouldDisplayAvatar</key>
+            <true/>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>iDUCashAppCell</string>
+            <key>label</key>
+            <string>Donate to me via CashApp</string>
+            <key>cashTag</key>
+            <string>£JacobCXDev</string>
+            <key>shouldDisplayAvatar</key>
+            <true/>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>iDUMailCell</string>
+            <key>label</key>
+            <string>Email me for support</string>
+            <key>emailAddress</key>
+            <string>jacobcxdev@gmail.com</string>
+            <key>shouldDisplayAvatar</key>
+            <true/>
+        </dict>
+        <dict>
+            <key>cellClass</key>
+            <string>iDUGitHubCell</string>
+            <key>label</key>
+            <string>View the source code on GitHub</string>
+            <key>remote</key>
+            <string>jacobcxdev/iDunnoU</string>
+            <key>shouldDisplayAvatar</key>
+            <true/>
+        </dict>
+    </array>
+    <key>title</key>
+    <string>iDunnoU</string>
 </dict>
 </plist>

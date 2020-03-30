@@ -1,7 +1,6 @@
 #import "iDUTableCell.h"
 
-@interface iDUGradientHeaderCellBlurContentView : UIView
-{
+@interface iDUGradientHeaderCellBlurContentView : UIView {
     CAShapeLayer *_borderLayer;
 }
 @end

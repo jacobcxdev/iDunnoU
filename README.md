@@ -14,7 +14,7 @@ A tweak for Messages — written in Objective-C + Logos.
 
 ### Badge Preferences
 * Hide badges from unknown senders
-* Hide toggle button badge
+* Hide iDunnoU button badge
 
 ### Security Preferences
 * Secure unknown sender list
@@ -24,4 +24,4 @@ A tweak for Messages — written in Objective-C + Logos.
 ![Known List](https://user-images.githubusercontent.com/27970288/76992076-92361f80-6942-11ea-9e6d-380be8f5fe46.png)
 ![Face ID](https://user-images.githubusercontent.com/27970288/76992065-8cd8d500-6942-11ea-87c3-9f0c5f66372b.png)
 ![Unknown List](https://user-images.githubusercontent.com/27970288/76992083-94987980-6942-11ea-8f57-c11feed3322f.png)
-![Preferences](https://user-images.githubusercontent.com/27970288/76987395-fe148a00-693a-11ea-871b-f094e6c36045.png)
+![Preferences](https://user-images.githubusercontent.com/27970288/78515643-79d15c00-77ae-11ea-83be-a7e695db10ab.png)

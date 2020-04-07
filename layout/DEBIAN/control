@@ -1,12 +1,12 @@
 Package: com.jacobcxdev.idunnou
 Name: iDunnoU
-Depends: mobilesubstrate, firmware (>= 13.0), preferenceloader
+Depends: mobilesubstrate, preferenceloader, firmware (>= 13.0)
 Architecture: iphoneos-arm
-Description: A tweak for Messages to automatically hide conversations from unknown senders, swipe to hide/unhide or block/unblock individual conversations, and secure conversations.
+Description: Use this tweak to hide, secure, and block conversations like clockwork.
 Maintainer: JacobCXDev <jacobcxdev@gmail.com>
 Author: JacobCXDev <jacobcxdev@gmail.com>
 Section: Tweaks
-Version: 1.2.1
+Version: 1.2.2
 Tag: cydia::commercial, compatible::ios13
 Icon: https://chariz.com/cdn/icon/idunnou/icon@3x.png
 Depiction: https://repo.chariz.com/package/com.jacobcxdev.idunnou/

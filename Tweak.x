@@ -6,89 +6,14 @@
 //  Copyright © 2020 JacobCXDev. All rights reserved.
 //
 
-#import <UIKit/UIKit.h>
-#import <LocalAuthentication/LocalAuthentication.h>
-#import "iDUBadgeButton.h"
-#import "iDUNotificationCentre.h"
-
-// NSUbiquitousKeyValueStore Interfaces
-
-@interface NSUbiquitousKeyValueStore (iDunnoU)
-- (instancetype)initWithBundleIdentifier:(NSString *)bundleIdentifier;
-@end
-
-// Messages Interfaces
-
-@interface CNContact : NSObject
-- (NSArray *)handles;
-@end
-
-@interface CKEntity : NSObject
-- (CNContact *)cnContact;
-@end
-
-@interface CKConversation : NSObject
-- (void)blacklist;
-- (BOOL)isBlacklisted;
-- (BOOL)isWhitelisted;
-- (BOOL)isKnownSender;
-- (CKEntity *)recipient;
-- (void)removeFromBlacklist;
-- (void)removeFromWhitelist;
-- (NSString *)uniqueIdentifier;
-- (unsigned long long)unreadCount;
-- (void)whitelist;
-@end
-
-@interface CKConversationList : NSObject
-- (NSMutableArray *)conversations;
-@end
-
-@interface CKConversationListCell : UITableViewCell
-- (CKConversation *)conversation;
-@end
-
-@interface CKConversationListController : UITableViewController<UITableViewDelegate, UITableViewDataSource>
-- (void)_chatUnreadCountDidChange:(NSNotification *)notification;
-- (void)_toggleShowUnknownArray;
-- (CKConversationList *)conversationList;
-- (void)toggleShowUnknownArray;
-- (void)updateConversationList;
-@end
-
-@interface CNContactToggleBlockCallerAction : NSObject
-- (BOOL)isBlocked;
-- (void)block;
-- (void)unblock;
-- (instancetype)initWithContact:(CNContact *)contact;
-@end
-
-@interface SMSApplication : UIApplication<UIApplicationDelegate>
-- (void)applicationWillTerminate;
-- (NSInteger)applicationIconBadgeNumber;
-- (void)setApplicationBadgeString:(id)string;
-- (void)setApplicationIconBadgeNumber:(NSInteger)number;
-@end
-
-// IMAgent Interfaces
-
-@interface IMDBadgeUtilities : NSObject
-- (void)updateBadgeForUnreadCountChangeIfNeeded:(long long)count;
-@end
-
-// TCCd Interfaces
-
-@interface TCCDService : NSObject
-@property (retain, nonatomic) NSString *name;
-- (void)setDefaultAllowedIdentifiersList:(NSArray *)list;
-@end
+#import "Tweak.h"
 
 // Static Variables
 
 static NSMutableArray *conversationBlacklist;
-static NSString *conversationBlacklistKey = @"conversationBlacklist";
+static NSString *conversationBlacklistKey = @"com.jacobcxdev.idunnou.conversationBlacklist";
 static NSMutableArray *conversationWhitelist;
-static NSString *conversationWhitelistKey = @"conversationWhitelist";
+static NSString *conversationWhitelistKey = @"com.jacobcxdev.idunnou.conversationWhitelist";
 static bool shouldHideUnknownUnreadCountFromSBBadge = false;
 static NSString *shouldHideUnknownUnreadCountFromSBBadgeKey = @"shouldHideUnknownUnreadCountFromSBBadge";
 static bool shouldHideButtonBadge = false;
@@ -101,8 +26,8 @@ static NSUInteger knownUnreadCount = 0;
 static NSString *knownUnreadCountKey = @"knownUnreadCount";
 static NSUInteger unknownUnreadCount = 0;
 static NSString *unknownUnreadCountKey = @"unknownUnreadCount";
-static NSString *varUpdateNotificationName = @"com.jacobcxdev.idunnou.var.update";
-static NSString *varRequestNotificationName = @"com.jacobcxdev.idunnou.var.request";
+static NSString *localUpdateNotificationName = @"com.jacobcxdev.idunnou.local.update";
+static NSString *localRequestNotificationName = @"com.jacobcxdev.idunnou.local.request";
 static NSString *iCloudPersistNotificationName = @"com.jacobcxdev.idunnou.iCloud.persist";
 static NSString *iCloudRestoreNotificationName = @"com.jacobcxdev.idunnou.iCloud.restore";
 static NSString *userDefaultsDidUpdateNotificationName = @"com.jacobcxdev.idunnou.userDefaults.didUpdate";
@@ -113,6 +38,8 @@ static CKConversationListController *ckclc;
 static IMDBadgeUtilities *imdbu;
 static iDUBadgeButton *button;
 static UIBarButtonItem *bbi;
+
+// Static Functions
 
 static void updateBadgeCount() {
     button.badgeCount = shouldHideButtonBadge ? 0 : showUnknownArray ? knownUnreadCount : unknownUnreadCount;
@@ -195,7 +122,7 @@ static void persistiCloudState() {
         }
     }
     updateBadgeCount();
-    [notificationCentre postNotificationUsingPostHandlerWithName:varUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+    [notificationCentre postNotificationUsingPostHandlerWithName:localUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
     return showUnknownArray ? unknownArray : knownArray;
 }
 %end
@@ -325,7 +252,7 @@ static void persistiCloudState() {
 // Constructor
 
 %ctor {
-    NSMutableDictionary *settings = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/var/mobile/Library/Preferences/com.jacobcxdev.idunnou.plist"];
+    NSMutableDictionary *settings = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/User/Library/Preferences/com.jacobcxdev.idunnou.plist"];
     if (settings) {
         bool enabled = [settings objectForKey:@"enabled"] ? [[settings objectForKey:@"enabled"] boolValue] : true;
         if (!enabled) return;
@@ -334,7 +261,7 @@ static void persistiCloudState() {
         shouldSecureUnknownList = [settings objectForKey:shouldSecureUnknownListKey] && [[settings objectForKey:shouldSecureUnknownListKey] boolValue];
     }
 
-    if ([[NSBundle mainBundle].bundleIdentifier isEqual:@"com.apple.tccd"]) %init(TCCd);
+    if ([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.tccd"]) %init(TCCd);
     else {
         notificationCentre = [iDUNotificationCentre centre];
         NSString *mainBundleID = [NSBundle mainBundle].bundleIdentifier;
@@ -342,7 +269,7 @@ static void persistiCloudState() {
             userDefaults = [NSUserDefaults standardUserDefaults];
             showUnknownArray = shouldSecureUnknownList ? false : [userDefaults boolForKey:showUnknownArrayKey];
             notificationCentre.postHandler = ^NSDictionary *(NSString *name) {
-                if ([name isEqualToString:varUpdateNotificationName]) {
+                if ([name isEqualToString:localUpdateNotificationName]) {
                     return @{
                         shouldHideUnknownUnreadCountFromSBBadgeKey: @(shouldHideUnknownUnreadCountFromSBBadge),
                         knownUnreadCountKey: @(knownUnreadCount),
@@ -352,29 +279,29 @@ static void persistiCloudState() {
                 return nil;
             };
             notificationCentre.receivedHandler = ^(NSNotification *notification) {
-                if ([notification.name isEqualToString:varRequestNotificationName]) {
-                    [notificationCentre postNotificationUsingPostHandlerWithName:varUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+                if ([notification.name isEqualToString:localRequestNotificationName]) {
+                    [notificationCentre postNotificationUsingPostHandlerWithName:localUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
                 } else if ([notification.name isEqualToString:userDefaultsDidUpdateNotificationName]) {
                     restoreDefaultsState();
                     if (ckclc) [ckclc updateConversationList];
                 }
             };
-            [notificationCentre observeNotificationsWithName:varRequestNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
+            [notificationCentre observeNotificationsWithName:localRequestNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:userDefaultsDidUpdateNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre postNotificationWithName:iCloudRestoreNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
             %init(Messages);
         } else if ([mainBundleID isEqualToString:@"com.apple.imagent"]) {
             userDefaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.apple.MobileSMS"];
             notificationCentre.receivedHandler = ^(NSNotification *notification) {
-                if ([notification.name isEqualToString:varUpdateNotificationName]) {
+                if ([notification.name isEqualToString:localUpdateNotificationName]) {
                     shouldHideUnknownUnreadCountFromSBBadge = [notification.userInfo objectForKey:shouldHideUnknownUnreadCountFromSBBadgeKey] && [[notification.userInfo objectForKey:shouldHideUnknownUnreadCountFromSBBadgeKey] boolValue];
                     knownUnreadCount = [notification.userInfo objectForKey:knownUnreadCountKey] ? [[notification.userInfo objectForKey:knownUnreadCountKey] intValue] : [userDefaults integerForKey:knownUnreadCountKey];
                     unknownUnreadCount = [notification.userInfo objectForKey:unknownUnreadCountKey] ? [[notification.userInfo objectForKey:unknownUnreadCountKey] intValue] : [userDefaults integerForKey:unknownUnreadCountKey];
                     if (imdbu) [imdbu updateBadgeForUnreadCountChangeIfNeeded:knownUnreadCount + unknownUnreadCount];
                 }
             };
-            [notificationCentre observeNotificationsWithName:varUpdateNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
-            [notificationCentre postNotificationWithName:varRequestNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+            [notificationCentre observeNotificationsWithName:localUpdateNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
+            [notificationCentre postNotificationWithName:localRequestNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
             %init(IMAgent);
         } else if ([mainBundleID isEqualToString:@"com.apple.springboard"]) {
             userDefaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.apple.MobileSMS"];

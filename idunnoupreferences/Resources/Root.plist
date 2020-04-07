@@ -23,8 +23,8 @@
             <string>Main Preferences</string>
         </dict>
         <dict>
-            <key>cellClass</key>
-            <string>iDUSwitchTableCell</string>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
             <key>default</key>
             <true/>
             <key>defaults</key>
@@ -39,10 +39,12 @@
             <string>PSGroupCell</string>
             <key>label</key>
             <string>Badge Preferences</string>
+            <key>footerText</key>
+            <string>Prevent unread messages from the unknown sender list from contributing to the Messages app badge count.</string>
         </dict>
         <dict>
-            <key>cellClass</key>
-            <string>iDUSwitchTableCell</string>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
             <key>default</key>
             <false/>
             <key>defaults</key>
@@ -50,11 +52,17 @@
             <key>key</key>
             <string>shouldHideUnknownUnreadCountFromSBBadge</string>
             <key>label</key>
-            <string>Hide badges from unknown senders</string>
+            <string>Hide Badges from Unknown Senders</string>
         </dict>
         <dict>
-            <key>cellClass</key>
-            <string>iDUSwitchTableCell</string>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Hide the badge from the iDunnoU button inside Messages.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
             <key>default</key>
             <false/>
             <key>defaults</key>
@@ -62,17 +70,19 @@
             <key>key</key>
             <string>shouldHideButtonBadge</string>
             <key>label</key>
-            <string>Hide toggle button badge</string>
+            <string>Hide iDunnoU Button Badge</string>
         </dict>
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
             <string>Security Preferences</string>
+            <key>footerText</key>
+            <string>Require Face ID, Touch ID or passcode to view the unknown sender list.</string>
         </dict>
         <dict>
-            <key>cellClass</key>
-            <string>iDUSwitchTableCell</string>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
             <key>default</key>
             <false/>
             <key>defaults</key>
@@ -80,7 +90,7 @@
             <key>key</key>
             <string>shouldSecureUnknownList</string>
             <key>label</key>
-            <string>Secure unknown sender list</string>
+            <string>Secure Unknown Sender List</string>
         </dict>
         <dict>
             <key>cell</key>

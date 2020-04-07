@@ -252,7 +252,7 @@ static void persistiCloudState() {
 // Constructor
 
 %ctor {
-    NSMutableDictionary *settings = [[NSMutableDictionary alloc] initWithContentsOfFile:@"/User/Library/Preferences/com.jacobcxdev.idunnou.plist"];
+    NSDictionary *settings = [NSDictionary dictionaryWithContentsOfFile:@"/User/Library/Preferences/com.jacobcxdev.idunnou.plist"];
     if (settings) {
         bool enabled = [settings objectForKey:@"enabled"] ? [[settings objectForKey:@"enabled"] boolValue] : true;
         if (!enabled) return;

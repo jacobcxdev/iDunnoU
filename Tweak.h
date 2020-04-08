@@ -76,3 +76,10 @@
 @property (retain, nonatomic) NSString *name;
 - (void)setDefaultAllowedIdentifiersList:(NSArray *)list;
 @end
+
+// SpringBoard Interfaces
+
+@interface SpringBoard : NSObject
+- (BOOL)_handlePhysicalButtonEvent:(UIPressesEvent *)event;
+- (void)_ringerChanged:(void *)event;
+@end

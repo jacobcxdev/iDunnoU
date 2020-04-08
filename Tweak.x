@@ -10,10 +10,14 @@
 
 // Static Variables
 
-static NSMutableArray *conversationBlacklist;
-static NSString *conversationBlacklistKey = @"com.jacobcxdev.idunnou.conversationBlacklist";
-static NSMutableArray *conversationWhitelist;
-static NSString *conversationWhitelistKey = @"com.jacobcxdev.idunnou.conversationWhitelist";
+static bool shouldShowButton = true;
+static NSString *shouldShowButtonKey = @"shouldShowButton";
+static bool shouldToggleWhenShaken = false;
+static NSString *shouldToggleWhenShakenKey = @"shouldToggleWhenShaken";
+static bool shouldToggleWhenVolumePressedSimultaneously = false;
+static NSString *shouldToggleWhenVolumePressedSimultaneouslyKey = @"shouldToggleWhenVolumePressedSimultaneously";
+static bool shouldToggleWhenRingerSwitched = false;
+static NSString *shouldToggleWhenRingerSwitchedKey = @"shouldToggleWhenRingerSwitched";
 static bool shouldHideUnknownUnreadCountFromSBBadge = false;
 static NSString *shouldHideUnknownUnreadCountFromSBBadgeKey = @"shouldHideUnknownUnreadCountFromSBBadge";
 static bool shouldHideButtonBadge = false;
@@ -22,18 +26,31 @@ static bool shouldSecureUnknownList = false;
 static NSString *shouldSecureUnknownListKey = @"shouldSecureUnknownList";
 static bool showUnknownArray = false;
 static NSString *showUnknownArrayKey = @"showUnknownArray";
+
 static NSUInteger knownUnreadCount = 0;
 static NSString *knownUnreadCountKey = @"knownUnreadCount";
 static NSUInteger unknownUnreadCount = 0;
 static NSString *unknownUnreadCountKey = @"unknownUnreadCount";
+
+static NSMutableArray *conversationBlacklist;
+static NSString *conversationBlacklistKey = @"com.jacobcxdev.idunnou.conversationBlacklist";
+static NSMutableArray *conversationWhitelist;
+static NSString *conversationWhitelistKey = @"com.jacobcxdev.idunnou.conversationWhitelist";
+
+static NSString *toggleShowUnknownArrayNotificationName = @"com.jacobcxdev.idunnou.showUnknownArray.toggle";
 static NSString *localUpdateNotificationName = @"com.jacobcxdev.idunnou.local.update";
 static NSString *localRequestNotificationName = @"com.jacobcxdev.idunnou.local.request";
 static NSString *iCloudPersistNotificationName = @"com.jacobcxdev.idunnou.iCloud.persist";
 static NSString *iCloudRestoreNotificationName = @"com.jacobcxdev.idunnou.iCloud.restore";
 static NSString *userDefaultsDidUpdateNotificationName = @"com.jacobcxdev.idunnou.userDefaults.didUpdate";
-static iDUNotificationCentre *notificationCentre;
+
 static NSUserDefaults *userDefaults;
 static NSUbiquitousKeyValueStore *store;
+
+static NSUInteger ringerSwitchedCount;
+static NSDate *lastRingerSwitch;
+
+static iDUNotificationCentre *notificationCentre;
 static CKConversationListController *ckclc;
 static IMDBadgeUtilities *imdbu;
 static iDUBadgeButton *button;
@@ -42,6 +59,7 @@ static UIBarButtonItem *bbi;
 // Static Functions
 
 static void updateBadgeCount() {
+    if (!button) return;
     button.badgeCount = shouldHideButtonBadge ? 0 : showUnknownArray ? knownUnreadCount : unknownUnreadCount;
 }
 
@@ -138,7 +156,7 @@ static void persistiCloudState() {
     return %orig;
 }
 - (void)viewDidLayoutSubviews {
-    if (!self.navigationItem.leftBarButtonItem) {
+    if (shouldShowButton && !self.navigationItem.leftBarButtonItem) {
         if (!bbi) {
             if (!button) {
                 button = [iDUBadgeButton buttonWithType:UIButtonTypeCustom];
@@ -188,6 +206,10 @@ static void persistiCloudState() {
         [actions addObject:blockAction];
     }
     return [UISwipeActionsConfiguration configurationWithActions:actions];
+}
+%new
+- (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
+    if (shouldToggleWhenShaken && motion == UIEventSubtypeMotionShake) [self toggleShowUnknownArray];
 }
 %new
 - (void)toggleShowUnknownArray {
@@ -249,6 +271,37 @@ static void persistiCloudState() {
 %end
 %end
 
+// SpringBoard Hooks
+
+%group SpringBoard
+%hook SpringBoard
+- (BOOL)_handlePhysicalButtonEvent:(UIPressesEvent *)event {
+    bool containsVolumeUp = false;
+    bool containsVolumeDown = false;
+    for (UIPress *press in event.allPresses)
+        if (press.force == 1) {
+            if (!containsVolumeUp) containsVolumeUp = press.type == 102;
+            if (!containsVolumeDown) containsVolumeDown = press.type == 103;
+        }
+    if (containsVolumeUp && containsVolumeDown && notificationCentre)
+        [notificationCentre postNotificationWithName:toggleShowUnknownArrayNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+    return %orig;
+}
+- (void)_ringerChanged:(void *)event {
+    if (shouldToggleWhenRingerSwitched) {
+        if (lastRingerSwitch && [lastRingerSwitch timeIntervalSinceNow] > -2) ringerSwitchedCount++;
+        else ringerSwitchedCount = 1;
+        lastRingerSwitch = [NSDate date];
+        if (shouldToggleWhenRingerSwitched && ringerSwitchedCount == 3) {
+            ringerSwitchedCount = 0;
+            if (notificationCentre) [notificationCentre postNotificationWithName:toggleShowUnknownArrayNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+        }
+    }
+    return %orig;
+}
+%end
+%end
+
 // Constructor
 
 %ctor {
@@ -256,6 +309,10 @@ static void persistiCloudState() {
     if (settings) {
         bool enabled = [settings objectForKey:@"enabled"] ? [[settings objectForKey:@"enabled"] boolValue] : true;
         if (!enabled) return;
+        shouldShowButton = [settings objectForKey:shouldShowButtonKey] ? [[settings objectForKey:shouldShowButtonKey] boolValue] : true;
+        shouldToggleWhenShaken = [settings objectForKey:shouldToggleWhenShakenKey] && [[settings objectForKey:shouldToggleWhenShakenKey] boolValue];
+        shouldToggleWhenVolumePressedSimultaneously = [settings objectForKey:shouldToggleWhenVolumePressedSimultaneouslyKey] && [[settings objectForKey:shouldToggleWhenVolumePressedSimultaneouslyKey] boolValue];
+        shouldToggleWhenRingerSwitched = [settings objectForKey:shouldToggleWhenRingerSwitchedKey] && [[settings objectForKey:shouldToggleWhenRingerSwitchedKey] boolValue];
         shouldHideUnknownUnreadCountFromSBBadge = [settings objectForKey:shouldHideUnknownUnreadCountFromSBBadgeKey] && [[settings objectForKey:shouldHideUnknownUnreadCountFromSBBadgeKey] boolValue];
         shouldHideButtonBadge = [settings objectForKey:shouldHideButtonBadgeKey] && [[settings objectForKey:shouldHideButtonBadgeKey] boolValue];
         shouldSecureUnknownList = [settings objectForKey:shouldSecureUnknownListKey] && [[settings objectForKey:shouldSecureUnknownListKey] boolValue];
@@ -279,13 +336,16 @@ static void persistiCloudState() {
                 return nil;
             };
             notificationCentre.receivedHandler = ^(NSNotification *notification) {
-                if ([notification.name isEqualToString:localRequestNotificationName]) {
+                if ([notification.name isEqualToString:toggleShowUnknownArrayNotificationName]) {
+                    if (ckclc) [ckclc toggleShowUnknownArray];
+                } else if ([notification.name isEqualToString:localRequestNotificationName]) {
                     [notificationCentre postNotificationUsingPostHandlerWithName:localUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
                 } else if ([notification.name isEqualToString:userDefaultsDidUpdateNotificationName]) {
                     restoreDefaultsState();
                     if (ckclc) [ckclc updateConversationList];
                 }
             };
+            [notificationCentre observeNotificationsWithName:toggleShowUnknownArrayNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:localRequestNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:userDefaultsDidUpdateNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre postNotificationWithName:iCloudRestoreNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
@@ -319,6 +379,7 @@ static void persistiCloudState() {
             [notificationCentre observeNotificationsWithName:iCloudPersistNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:iCloudRestoreNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:NSUbiquitousKeyValueStoreDidChangeExternallyNotification object:store from:[NSNotificationCenter defaultCenter]];
+            %init(SpringBoard);
         } else return;
 
         restoreDefaultsState();

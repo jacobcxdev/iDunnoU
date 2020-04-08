@@ -38,6 +38,80 @@
             <key>cell</key>
             <string>PSGroupCell</string>
             <key>label</key>
+            <string>Activation Preferences</string>
+            <key>footerText</key>
+            <string>Show the iDunnoU button in the navigation bar inside Messages.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <true/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.idunnou</string>
+            <key>key</key>
+            <string>shouldShowButton</string>
+            <key>label</key>
+            <string>Show iDunnoU Button</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Toggle between the known and unknown sender lists by shaking your device.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.idunnou</string>
+            <key>key</key>
+            <string>shouldToggleWhenShaken</string>
+            <key>label</key>
+            <string>Toggle with Shake</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Toggle between the known and unknown sender lists by pressing both volume buttons simultaneously.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.idunnou</string>
+            <key>key</key>
+            <string>shouldToggleWhenVolumePressedSimultaneously</string>
+            <key>label</key>
+            <string>Toggle with Volume Buttons</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Toggle between the known and unknown sender lists by toggling your device's ringer switch 3 times.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.idunnou</string>
+            <key>key</key>
+            <string>shouldToggleWhenRingerSwitched</string>
+            <key>label</key>
+            <string>Toggle with Ringer Switch</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>label</key>
             <string>Badge Preferences</string>
             <key>footerText</key>
             <string>Prevent unread messages from the unknown sender list from contributing to the Messages app badge count.</string>

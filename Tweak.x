@@ -337,7 +337,8 @@ static void persistiCloudState() {
             };
             notificationCentre.receivedHandler = ^(NSNotification *notification) {
                 if ([notification.name isEqualToString:toggleShowUnknownArrayNotificationName]) {
-                    if (ckclc) [ckclc toggleShowUnknownArray];
+                    if (ckclc && [UIApplication sharedApplication].applicationState == UIApplicationStateActive)
+                        [ckclc toggleShowUnknownArray];
                 } else if ([notification.name isEqualToString:localRequestNotificationName]) {
                     [notificationCentre postNotificationUsingPostHandlerWithName:localUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
                 } else if ([notification.name isEqualToString:userDefaultsDidUpdateNotificationName]) {

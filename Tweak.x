@@ -131,7 +131,7 @@ static void persistiCloudState() {
     knownUnreadCount = 0;
     unknownUnreadCount = 0;
     for (CKConversation *conversation in orig) {
-        if (([conversation isKnownSender] && ![conversation isBlacklisted]) || (![conversation isKnownSender] && [conversation isWhitelisted])) {
+        if (([[conversation chat] hasKnownParticipants] && ![conversation isBlacklisted]) || (![[conversation chat] hasKnownParticipants] && [conversation isWhitelisted])) {
             [knownArray addObject:conversation];
             knownUnreadCount += [conversation unreadCount];
         } else {
@@ -179,8 +179,8 @@ static void persistiCloudState() {
     CKConversationListCell *cell = (CKConversationListCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
     CKConversation *conversation = [cell conversation];
     CKEntity *recipient = [conversation recipient];
-    UIContextualAction *blacklistAction = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleDestructive title:([conversation isKnownSender] && [conversation isBlacklisted]) || (![conversation isKnownSender] && ![conversation isWhitelisted]) ? @"Unhide" : @"Hide" handler:^(UIContextualAction * _Nonnull action, __kindof UIView * _Nonnull sourceView, void (^ _Nonnull completionHandler)(BOOL)) {
-        if ([conversation isKnownSender]) {
+    UIContextualAction *blacklistAction = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleDestructive title:([[conversation chat] hasKnownParticipants] && [conversation isBlacklisted]) || (![[conversation chat] hasKnownParticipants] && ![conversation isWhitelisted]) ? @"Unhide" : @"Hide" handler:^(UIContextualAction * _Nonnull action, __kindof UIView * _Nonnull sourceView, void (^ _Nonnull completionHandler)(BOOL)) {
+        if ([[conversation chat] hasKnownParticipants]) {
             if ([conversation isBlacklisted]) [conversation removeFromBlacklist];
             else [conversation blacklist];
         } else {
@@ -192,7 +192,7 @@ static void persistiCloudState() {
         [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
         completionHandler(true);
     }];
-    blacklistAction.backgroundColor = [conversation isBlacklisted] || (![conversation isKnownSender] && ![conversation isWhitelisted]) ? [UIColor systemTealColor] : [UIColor systemBlueColor];
+    blacklistAction.backgroundColor = [conversation isBlacklisted] || (![[conversation chat] hasKnownParticipants] && ![conversation isWhitelisted]) ? [UIColor systemTealColor] : [UIColor systemBlueColor];
     NSMutableArray *actions = [[NSMutableArray alloc] init];
     [actions addObject:blacklistAction];
     if (recipient && [[recipient cnContact] handles].count != 0) {

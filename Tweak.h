@@ -13,6 +13,10 @@
 
 // Messages Interfaces
 
+@interface IMChat : NSObject
+- (BOOL)hasKnownParticipants;
+@end
+
 @interface CNContact : NSObject
 - (NSArray *)handles;
 @end
@@ -23,9 +27,9 @@
 
 @interface CKConversation : NSObject
 - (void)blacklist;
+- (IMChat *)chat;
 - (BOOL)isBlacklisted;
 - (BOOL)isWhitelisted;
-- (BOOL)isKnownSender;
 - (CKEntity *)recipient;
 - (void)removeFromBlacklist;
 - (void)removeFromWhitelist;

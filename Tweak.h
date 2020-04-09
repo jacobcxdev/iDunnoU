@@ -13,6 +13,10 @@
 
 // Messages Interfaces
 
+@interface IMChat : NSObject
+- (BOOL)hasKnownParticipants;
+@end
+
 @interface CNContact : NSObject
 - (NSArray *)handles;
 @end
@@ -23,9 +27,9 @@
 
 @interface CKConversation : NSObject
 - (void)blacklist;
+- (IMChat *)chat;
 - (BOOL)isBlacklisted;
 - (BOOL)isWhitelisted;
-- (BOOL)isKnownSender;
 - (CKEntity *)recipient;
 - (void)removeFromBlacklist;
 - (void)removeFromWhitelist;
@@ -75,4 +79,11 @@
 @interface TCCDService : NSObject
 @property (retain, nonatomic) NSString *name;
 - (void)setDefaultAllowedIdentifiersList:(NSArray *)list;
+@end
+
+// SpringBoard Interfaces
+
+@interface SpringBoard : NSObject
+- (BOOL)_handlePhysicalButtonEvent:(UIPressesEvent *)event;
+- (void)_ringerChanged:(void *)event;
 @end

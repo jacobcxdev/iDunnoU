@@ -8,8 +8,8 @@
 
 #import <UIKit/UIKit.h>
 #import <LocalAuthentication/LocalAuthentication.h>
+#import <libJCX/Utilities.h>
 #import "iDUBadgeButton.h"
-#import "iDUNotificationCentre.h"
 
 // Messages Interfaces
 

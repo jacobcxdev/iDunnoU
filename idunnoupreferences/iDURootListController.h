@@ -1,8 +1,5 @@
-#import <Preferences/PSListController.h>
-#import <Preferences/PSSpecifier.h>
-#import <NSTask.h>
-#import "iDUPackageInfo.h"
+#import <libJCX/JCXPreferences.h>
 
-@interface iDURootListController : PSListController
+@interface iDURootListController : JCXRootListController
 - (void)killall;
 @end

@@ -50,7 +50,7 @@ static NSUbiquitousKeyValueStore *store;
 static NSUInteger ringerSwitchedCount;
 static NSDate *lastRingerSwitch;
 
-static iDUNotificationCentre *notificationCentre;
+static JCXNotificationCentre *notificationCentre;
 static CKConversationListController *ckclc;
 static IMDBadgeUtilities *imdbu;
 static iDUBadgeButton *button;
@@ -67,15 +67,15 @@ static void restoreDefaultsState() {
     if (!userDefaults) return;
     knownUnreadCount = [userDefaults integerForKey:knownUnreadCountKey];
     unknownUnreadCount = [userDefaults integerForKey:unknownUnreadCountKey];
-    conversationBlacklist = [userDefaults arrayForKey:conversationBlacklistKey] ? [[userDefaults arrayForKey:conversationBlacklistKey] mutableCopy] : [[NSMutableArray alloc] init];
-    conversationWhitelist = [userDefaults arrayForKey:conversationWhitelistKey] ? [[userDefaults arrayForKey:conversationWhitelistKey] mutableCopy] : [[NSMutableArray alloc] init];
+    conversationBlacklist = [userDefaults arrayForKey:conversationBlacklistKey] ? [[userDefaults arrayForKey:conversationBlacklistKey] mutableCopy] : [NSMutableArray new];
+    conversationWhitelist = [userDefaults arrayForKey:conversationWhitelistKey] ? [[userDefaults arrayForKey:conversationWhitelistKey] mutableCopy] : [NSMutableArray new];
 }
 
 static void restoreiCloudState() {
     if (!store) return;
     [store synchronize];
-    conversationBlacklist = [store arrayForKey:conversationBlacklistKey] ? [[store arrayForKey:conversationBlacklistKey] mutableCopy] : [[NSMutableArray alloc] init];
-    conversationWhitelist = [store arrayForKey:conversationWhitelistKey] ? [[store arrayForKey:conversationWhitelistKey] mutableCopy] : [[NSMutableArray alloc] init];
+    conversationBlacklist = [store arrayForKey:conversationBlacklistKey] ? [[store arrayForKey:conversationBlacklistKey] mutableCopy] : [NSMutableArray new];
+    conversationWhitelist = [store arrayForKey:conversationWhitelistKey] ? [[store arrayForKey:conversationWhitelistKey] mutableCopy] : [NSMutableArray new];
 }
 
 static void persistDefaultsState() {
@@ -126,8 +126,8 @@ static void persistiCloudState() {
 %hook CKConversationList
 - (NSMutableArray *)conversations {
     NSMutableArray *orig = %orig;
-    NSMutableArray *knownArray = [[NSMutableArray alloc] init];
-    NSMutableArray *unknownArray = [[NSMutableArray alloc] init];
+    NSMutableArray *knownArray = [NSMutableArray new];
+    NSMutableArray *unknownArray = [NSMutableArray new];
     knownUnreadCount = 0;
     unknownUnreadCount = 0;
     for (CKConversation *conversation in orig) {
@@ -193,7 +193,7 @@ static void persistiCloudState() {
         completionHandler(true);
     }];
     blacklistAction.backgroundColor = [conversation isBlacklisted] || (![[conversation chat] hasKnownParticipants] && ![conversation isWhitelisted]) ? [UIColor systemTealColor] : [UIColor systemBlueColor];
-    NSMutableArray *actions = [[NSMutableArray alloc] init];
+    NSMutableArray *actions = [NSMutableArray new];
     [actions addObject:blacklistAction];
     if (recipient && [[recipient cnContact] handles].count != 0) {
         CNContactToggleBlockCallerAction *cnBlockAction = [[%c(CNContactToggleBlockCallerAction) alloc] initWithContact:[recipient cnContact]];
@@ -214,7 +214,7 @@ static void persistiCloudState() {
 %new
 - (void)toggleShowUnknownArray {
     if (shouldSecureUnknownList && !showUnknownArray) {
-        LAContext *context = [[LAContext alloc] init];
+        LAContext *context = [LAContext new];
         NSError *error = nil;
         if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthentication error:&error])
             [context evaluatePolicy:LAPolicyDeviceOwnerAuthentication localizedReason:@"iDunnoU" reply:^(BOOL success, NSError *error) {
@@ -264,7 +264,7 @@ static void persistiCloudState() {
     if ([self.name isEqual:@"kTCCServiceFaceID"]) {
         NSMutableArray *mutableList = [list mutableCopy];
         [mutableList addObject:@"com.apple.MobileSMS"];
-        return %orig(mutableList);
+        return %orig([mutableList copy]);
     }
     return %orig;
 }
@@ -320,7 +320,7 @@ static void persistiCloudState() {
 
     if ([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.tccd"]) %init(TCCd);
     else {
-        notificationCentre = [iDUNotificationCentre centre];
+        notificationCentre = [JCXNotificationCentre centre];
         NSString *mainBundleID = [NSBundle mainBundle].bundleIdentifier;
         if ([mainBundleID isEqualToString:@"com.apple.MobileSMS"]) {
             userDefaults = [NSUserDefaults standardUserDefaults];

@@ -26,7 +26,7 @@
     _badgeLabel.layer.masksToBounds = true;
 }
 - (void)setup {
-    _badgeLabel = [[UILabel alloc] init];
+    _badgeLabel = [UILabel new];
     _badgeLabel.textColor = [UIColor whiteColor];
     _badgeLabel.backgroundColor = [UIColor systemRedColor];
     _badgeLabel.textAlignment = NSTextAlignmentCenter;

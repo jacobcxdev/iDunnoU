@@ -1,11 +1,11 @@
 include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = iDunnoUPreferences
-
 iDunnoUPreferences_FILES = $(wildcard *.m)
 iDunnoUPreferences_INSTALL_PATH = /Library/PreferenceBundles
 iDunnoUPreferences_FRAMEWORKS = UIKit
 iDunnoUPreferences_PRIVATE_FRAMEWORKS = Preferences
+iDunnoUPreferences_EXTRA_FRAMEWORKS += libJCX
 iDunnoUPreferences_CFLAGS = -fobjc-arc
 
 include $(THEOS_MAKE_PATH)/bundle.mk

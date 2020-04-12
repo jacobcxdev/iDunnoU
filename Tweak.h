@@ -65,6 +65,7 @@
 @interface CKConversationListController : UITableViewController<UITableViewDelegate, UITableViewDataSource>
 - (void)_chatUnreadCountDidChange:(NSNotification *)notification;
 - (void)_toggleShowUnknownArray;
+- (NSArray *)activeConversations;
 - (CKConversationList *)conversationList;
 - (void)toggleShowUnknownArray;
 - (void)updateConversationList;

@@ -105,10 +105,47 @@ static void persistiCloudState() {
     [store setArray:conversationWhitelist forKey:conversationWhitelistKey];
 }
 
+static NSMutableArray *filterConversations(NSArray *conversations, bool updateUnreadCount) {
+    NSMutableArray *pendingKnownArray = [NSMutableArray new];
+    NSMutableArray *knownArray = [NSMutableArray new];
+    NSMutableArray *pendingUnknownArray = [NSMutableArray new];
+    NSMutableArray *unknownArray = [NSMutableArray new];
+    NSUInteger pendingKnownUnreadCount = 0;
+    NSUInteger pendingUnknownUnreadCount = 0;
+    for (CKConversation *conversation in conversations)
+        if (([[conversation chat] hasKnownParticipants] && ![conversation isBlacklisted]) || (![[conversation chat] hasKnownParticipants] && [conversation isWhitelisted])) {
+            pendingKnownUnreadCount += [conversation unreadCount];
+            if ([conversation isPinned]) [knownArray addObject:conversation];
+            else [pendingKnownArray addObject:conversation];
+        } else {
+            pendingUnknownUnreadCount += [conversation unreadCount];
+            if ([conversation isPinned]) [unknownArray addObject:conversation];
+            else [pendingUnknownArray addObject:conversation];
+        }
+    [knownArray sortUsingComparator:^NSComparisonResult(CKConversation* a, CKConversation* b) {
+        return [@([pinnedConversationList indexOfObject:[a uniqueIdentifier]]) compare:@([pinnedConversationList indexOfObject:[b uniqueIdentifier]])];
+    }];
+    [unknownArray sortUsingComparator:^NSComparisonResult(CKConversation* a, CKConversation* b) {
+        return [@([pinnedConversationList indexOfObject:[a uniqueIdentifier]]) compare:@([pinnedConversationList indexOfObject:[b uniqueIdentifier]])];
+    }];
+    [knownArray addObjectsFromArray:pendingKnownArray];
+    [unknownArray addObjectsFromArray:pendingUnknownArray];
+    if (updateUnreadCount) {
+        knownUnreadCount = pendingKnownUnreadCount;
+        unknownUnreadCount = pendingUnknownUnreadCount;
+        updateBadgeCount();
+        [notificationCentre postNotificationUsingPostHandlerWithName:localUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+    }
+    return showUnknownArray ? unknownArray : knownArray;
+}
+
 // Messages Hooks
 
 %group Messages
 %hook CKConversation
++ (BOOL)pinnedConversationsEnabled {
+    return true;
+}
 - (BOOL)isMuted {
     return [mutedConversationList containsObject:[self uniqueIdentifier]];
 }
@@ -123,9 +160,6 @@ static void persistiCloudState() {
     persistDefaultsState();
     [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
     return %orig;
-}
-+ (BOOL)pinnedConversationsEnabled {
-    return true;
 }
 - (BOOL)isPinned {
     return [pinnedConversationList containsObject:[self uniqueIdentifier]];
@@ -173,34 +207,7 @@ static void persistiCloudState() {
 
 %hook CKConversationList
 - (NSMutableArray *)conversations {
-    NSMutableArray *orig = %orig;
-    NSMutableArray *pendingKnownArray = [NSMutableArray new];
-    NSMutableArray *knownArray = [NSMutableArray new];
-    NSMutableArray *pendingUnknownArray = [NSMutableArray new];
-    NSMutableArray *unknownArray = [NSMutableArray new];
-    knownUnreadCount = 0;
-    unknownUnreadCount = 0;
-    for (CKConversation *conversation in orig)
-        if (([[conversation chat] hasKnownParticipants] && ![conversation isBlacklisted]) || (![[conversation chat] hasKnownParticipants] && [conversation isWhitelisted])) {
-            knownUnreadCount += [conversation unreadCount];
-            if ([conversation isPinned]) [knownArray addObject:conversation];
-            else [pendingKnownArray addObject:conversation];
-        } else {
-            unknownUnreadCount += [conversation unreadCount];
-            if ([conversation isPinned]) [unknownArray addObject:conversation];
-            else [pendingUnknownArray addObject:conversation];
-        }
-    [knownArray sortUsingComparator:^NSComparisonResult(CKConversation* a, CKConversation* b) {
-        return [@([pinnedConversationList indexOfObject:[a uniqueIdentifier]]) compare:@([pinnedConversationList indexOfObject:[b uniqueIdentifier]])];
-    }];
-    [unknownArray sortUsingComparator:^NSComparisonResult(CKConversation* a, CKConversation* b) {
-        return [@([pinnedConversationList indexOfObject:[a uniqueIdentifier]]) compare:@([pinnedConversationList indexOfObject:[b uniqueIdentifier]])];
-    }];
-    [knownArray addObjectsFromArray:pendingKnownArray];
-    [unknownArray addObjectsFromArray:pendingUnknownArray];
-    updateBadgeCount();
-    [notificationCentre postNotificationUsingPostHandlerWithName:localUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
-    return showUnknownArray ? unknownArray : knownArray;
+    return filterConversations(%orig, true);
 }
 %end
 
@@ -213,6 +220,9 @@ static void persistiCloudState() {
 - (void)_chatUnreadCountDidChange:(NSNotification *)notification {
     [[self conversationList] conversations];
     return %orig;
+}
+- (NSArray *)activeConversations {
+    return [filterConversations(%orig, false) copy];
 }
 - (void)viewDidLayoutSubviews {
     if (shouldShowButton && !self.navigationItem.leftBarButtonItem) {
@@ -285,7 +295,9 @@ static void persistiCloudState() {
             if ([conversation isWhitelisted]) [conversation removeFromWhitelist];
             else [conversation whitelist];
         }
-        [self updateConversationList];
+        [self.tableView beginUpdates];
+        [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+        [self.tableView endUpdates];
         completionHandler(true);
     }];
     hideUnhideAction.backgroundColor = [conversation isBlacklisted] || (![[conversation chat] hasKnownParticipants] && ![conversation isWhitelisted]) ? [UIColor systemTealColor] : [UIColor systemBlueColor];

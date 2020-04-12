@@ -32,6 +32,8 @@ static NSString *knownUnreadCountKey = @"knownUnreadCount";
 static NSUInteger unknownUnreadCount = 0;
 static NSString *unknownUnreadCountKey = @"unknownUnreadCount";
 
+static NSMutableArray *mutedConversationList;
+static NSString *mutedConversationListKey = @"com.jacobcxdev.idunnou.mutedConversationList";
 static NSMutableArray *pinnedConversationList;
 static NSString *pinnedConversationListKey = @"com.jacobcxdev.idunnou.pinnedConversationList";
 static NSMutableArray *conversationBlacklist;
@@ -69,6 +71,7 @@ static void restoreDefaultsState() {
     if (!userDefaults) return;
     knownUnreadCount = [userDefaults integerForKey:knownUnreadCountKey];
     unknownUnreadCount = [userDefaults integerForKey:unknownUnreadCountKey];
+    mutedConversationList = [userDefaults arrayForKey:mutedConversationListKey] ? [[userDefaults arrayForKey:mutedConversationListKey] mutableCopy] : [NSMutableArray new];
     pinnedConversationList = [userDefaults arrayForKey:pinnedConversationListKey] ? [[userDefaults arrayForKey:pinnedConversationListKey] mutableCopy] : [NSMutableArray new];
     conversationBlacklist = [userDefaults arrayForKey:conversationBlacklistKey] ? [[userDefaults arrayForKey:conversationBlacklistKey] mutableCopy] : [NSMutableArray new];
     conversationWhitelist = [userDefaults arrayForKey:conversationWhitelistKey] ? [[userDefaults arrayForKey:conversationWhitelistKey] mutableCopy] : [NSMutableArray new];
@@ -77,6 +80,7 @@ static void restoreDefaultsState() {
 static void restoreiCloudState() {
     if (!store) return;
     [store synchronize];
+    mutedConversationList = [store arrayForKey:mutedConversationListKey] ? [[store arrayForKey:mutedConversationListKey] mutableCopy] : [NSMutableArray new];
     pinnedConversationList = [store arrayForKey:pinnedConversationListKey] ? [[store arrayForKey:pinnedConversationListKey] mutableCopy] : [NSMutableArray new];
     conversationBlacklist = [store arrayForKey:conversationBlacklistKey] ? [[store arrayForKey:conversationBlacklistKey] mutableCopy] : [NSMutableArray new];
     conversationWhitelist = [store arrayForKey:conversationWhitelistKey] ? [[store arrayForKey:conversationWhitelistKey] mutableCopy] : [NSMutableArray new];
@@ -87,6 +91,7 @@ static void persistDefaultsState() {
     [userDefaults setBool:showUnknownArray forKey:showUnknownArrayKey];
     [userDefaults setInteger:knownUnreadCount forKey:knownUnreadCountKey];
     [userDefaults setInteger:unknownUnreadCount forKey:unknownUnreadCountKey];
+    [userDefaults setObject:mutedConversationList forKey:mutedConversationListKey];
     [userDefaults setObject:pinnedConversationList forKey:pinnedConversationListKey];
     [userDefaults setObject:conversationBlacklist forKey:conversationBlacklistKey];
     [userDefaults setObject:conversationWhitelist forKey:conversationWhitelistKey];
@@ -94,6 +99,7 @@ static void persistDefaultsState() {
 
 static void persistiCloudState() {
     if (!store) return;
+    [store setArray:mutedConversationList forKey:mutedConversationListKey];
     [store setArray:pinnedConversationList forKey:pinnedConversationListKey];
     [store setArray:conversationBlacklist forKey:conversationBlacklistKey];
     [store setArray:conversationWhitelist forKey:conversationWhitelistKey];
@@ -103,6 +109,21 @@ static void persistiCloudState() {
 
 %group Messages
 %hook CKConversation
+- (BOOL)isMuted {
+    return [mutedConversationList containsObject:[self uniqueIdentifier]];
+}
+- (void)setMutedUntilDate:(NSDate *)date {
+    [mutedConversationList addObject:[self uniqueIdentifier]];
+    persistDefaultsState();
+    [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+    return %orig;
+}
+- (void)unmute {
+    [mutedConversationList removeObject:[self uniqueIdentifier]];
+    persistDefaultsState();
+    [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+    return %orig;
+}
 + (BOOL)pinnedConversationsEnabled {
     return true;
 }

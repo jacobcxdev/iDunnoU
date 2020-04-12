@@ -37,7 +37,9 @@
 - (CKEntity *)recipient;
 - (void)removeFromBlacklist;
 - (void)removeFromWhitelist;
+- (void)setMutedUntilDate:(NSDate *)date;
 - (NSString *)uniqueIdentifier;
+- (void)unmute;
 - (unsigned long long)unreadCount;
 - (void)whitelist;
 @end

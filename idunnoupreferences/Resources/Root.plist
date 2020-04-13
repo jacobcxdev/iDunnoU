@@ -156,7 +156,7 @@
             <key>label</key>
             <string>Security Preferences</string>
             <key>footerText</key>
-            <string>Require Face ID, Touch ID or passcode to view the unknown sender list.</string>
+            <string>Require Face ID, Touch ID, or passcode to view the unknown sender list.</string>
         </dict>
         <dict>
             <key>cell</key>
@@ -169,6 +169,24 @@
             <string>shouldSecureUnknownList</string>
             <key>label</key>
             <string>Secure Unknown Sender List</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Automatically hide the unknown sender list when Messages enters the background.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.idunnou</string>
+            <key>key</key>
+            <string>shouldAutoHideUnknownList</string>
+            <key>label</key>
+            <string>Auto-Hide Unknown Sender List</string>
         </dict>
         <dict>
             <key>cell</key>

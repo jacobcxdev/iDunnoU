@@ -24,6 +24,8 @@ static bool shouldHideButtonBadge = false;
 static NSString *shouldHideButtonBadgeKey = @"shouldHideButtonBadge";
 static bool shouldSecureUnknownList = false;
 static NSString *shouldSecureUnknownListKey = @"shouldSecureUnknownList";
+static bool shouldAutoHideUnknownList = false;
+static NSString *shouldAutoHideUnknownListKey = @"shouldAutoHideUnknownList";
 static bool showUnknownArray = false;
 static NSString *showUnknownArrayKey = @"showUnknownArray";
 
@@ -426,6 +428,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
         shouldHideUnknownUnreadCountFromSBBadge = [settings objectForKey:shouldHideUnknownUnreadCountFromSBBadgeKey] && [[settings objectForKey:shouldHideUnknownUnreadCountFromSBBadgeKey] boolValue];
         shouldHideButtonBadge = [settings objectForKey:shouldHideButtonBadgeKey] && [[settings objectForKey:shouldHideButtonBadgeKey] boolValue];
         shouldSecureUnknownList = [settings objectForKey:shouldSecureUnknownListKey] && [[settings objectForKey:shouldSecureUnknownListKey] boolValue];
+        shouldAutoHideUnknownList = [settings objectForKey:shouldAutoHideUnknownListKey] && [[settings objectForKey:shouldAutoHideUnknownListKey] boolValue];
     }
 
     if ([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.tccd"]) %init(TCCd);
@@ -448,6 +451,11 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
             notificationCentre.receivedHandler = ^(NSNotification *notification) {
                 if ([notification.name isEqualToString:UIApplicationWillEnterForegroundNotification]) {
                     if (ckclc) [ckclc.tableView reloadData];
+                } else if ([notification.name isEqualToString:UIApplicationDidEnterBackgroundNotification]) {
+                    if (shouldAutoHideUnknownList) {
+                        showUnknownArray = false;
+                        if (ckclc) [ckclc updateConversationList];
+                    }
                 } else if ([notification.name isEqualToString:toggleShowUnknownArrayNotificationName]) {
                     if (ckclc && [UIApplication sharedApplication].applicationState == UIApplicationStateActive)
                         [ckclc toggleShowUnknownArray];
@@ -459,6 +467,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
                 }
             };
             [notificationCentre observeNotificationsWithName:UIApplicationWillEnterForegroundNotification from:[NSNotificationCenter defaultCenter]];
+            [notificationCentre observeNotificationsWithName:UIApplicationDidEnterBackgroundNotification from:[NSNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:toggleShowUnknownArrayNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:localRequestNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:userDefaultsDidUpdateNotificationName from:[NSDistributedNotificationCenter defaultCenter]];

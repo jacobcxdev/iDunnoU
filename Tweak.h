@@ -26,14 +26,20 @@
 @end
 
 @interface CKConversation : NSObject
+@property (nonatomic, assign, readwrite, getter=isPinned) BOOL pinned;
++ (BOOL)pinnedConversationsEnabled;
 - (void)blacklist;
 - (IMChat *)chat;
+- (BOOL)hasUnreadMessages;
 - (BOOL)isBlacklisted;
+- (BOOL)isMuted;
 - (BOOL)isWhitelisted;
 - (CKEntity *)recipient;
 - (void)removeFromBlacklist;
 - (void)removeFromWhitelist;
+- (void)setMutedUntilDate:(NSDate *)date;
 - (NSString *)uniqueIdentifier;
+- (void)unmute;
 - (unsigned long long)unreadCount;
 - (void)whitelist;
 @end
@@ -42,13 +48,24 @@
 - (NSMutableArray *)conversations;
 @end
 
-@interface CKConversationListCell : UITableViewCell
+@interface CKConversationListStandardCell : UITableViewCell {
+    UIImageView *_unreadIndicatorImageView;
+}
 - (CKConversation *)conversation;
+@end
+
+@interface CKUIBehavior : NSObject
++ (instancetype)sharedBehaviors;
+- (UIImage *)readDNDImage;
+- (UIImage *)unreadDNDImage;
+- (UIImage *)readPinnedImage;
+- (UIImage *)unreadPinnedImage;
 @end
 
 @interface CKConversationListController : UITableViewController<UITableViewDelegate, UITableViewDataSource>
 - (void)_chatUnreadCountDidChange:(NSNotification *)notification;
 - (void)_toggleShowUnknownArray;
+- (NSArray *)activeConversations;
 - (CKConversationList *)conversationList;
 - (void)toggleShowUnknownArray;
 - (void)updateConversationList;

@@ -24,6 +24,8 @@ static bool shouldHideButtonBadge = false;
 static NSString *shouldHideButtonBadgeKey = @"shouldHideButtonBadge";
 static bool shouldSecureUnknownList = false;
 static NSString *shouldSecureUnknownListKey = @"shouldSecureUnknownList";
+static bool shouldAutoHideUnknownList = false;
+static NSString *shouldAutoHideUnknownListKey = @"shouldAutoHideUnknownList";
 static bool showUnknownArray = false;
 static NSString *showUnknownArrayKey = @"showUnknownArray";
 
@@ -32,6 +34,10 @@ static NSString *knownUnreadCountKey = @"knownUnreadCount";
 static NSUInteger unknownUnreadCount = 0;
 static NSString *unknownUnreadCountKey = @"unknownUnreadCount";
 
+static NSMutableArray *mutedConversationList;
+static NSString *mutedConversationListKey = @"com.jacobcxdev.idunnou.mutedConversationList";
+static NSMutableArray *pinnedConversationList;
+static NSString *pinnedConversationListKey = @"com.jacobcxdev.idunnou.pinnedConversationList";
 static NSMutableArray *conversationBlacklist;
 static NSString *conversationBlacklistKey = @"com.jacobcxdev.idunnou.conversationBlacklist";
 static NSMutableArray *conversationWhitelist;
@@ -67,6 +73,8 @@ static void restoreDefaultsState() {
     if (!userDefaults) return;
     knownUnreadCount = [userDefaults integerForKey:knownUnreadCountKey];
     unknownUnreadCount = [userDefaults integerForKey:unknownUnreadCountKey];
+    mutedConversationList = [userDefaults arrayForKey:mutedConversationListKey] ? [[userDefaults arrayForKey:mutedConversationListKey] mutableCopy] : [NSMutableArray new];
+    pinnedConversationList = [userDefaults arrayForKey:pinnedConversationListKey] ? [[userDefaults arrayForKey:pinnedConversationListKey] mutableCopy] : [NSMutableArray new];
     conversationBlacklist = [userDefaults arrayForKey:conversationBlacklistKey] ? [[userDefaults arrayForKey:conversationBlacklistKey] mutableCopy] : [NSMutableArray new];
     conversationWhitelist = [userDefaults arrayForKey:conversationWhitelistKey] ? [[userDefaults arrayForKey:conversationWhitelistKey] mutableCopy] : [NSMutableArray new];
 }
@@ -74,6 +82,8 @@ static void restoreDefaultsState() {
 static void restoreiCloudState() {
     if (!store) return;
     [store synchronize];
+    mutedConversationList = [store arrayForKey:mutedConversationListKey] ? [[store arrayForKey:mutedConversationListKey] mutableCopy] : [NSMutableArray new];
+    pinnedConversationList = [store arrayForKey:pinnedConversationListKey] ? [[store arrayForKey:pinnedConversationListKey] mutableCopy] : [NSMutableArray new];
     conversationBlacklist = [store arrayForKey:conversationBlacklistKey] ? [[store arrayForKey:conversationBlacklistKey] mutableCopy] : [NSMutableArray new];
     conversationWhitelist = [store arrayForKey:conversationWhitelistKey] ? [[store arrayForKey:conversationWhitelistKey] mutableCopy] : [NSMutableArray new];
 }
@@ -83,65 +93,123 @@ static void persistDefaultsState() {
     [userDefaults setBool:showUnknownArray forKey:showUnknownArrayKey];
     [userDefaults setInteger:knownUnreadCount forKey:knownUnreadCountKey];
     [userDefaults setInteger:unknownUnreadCount forKey:unknownUnreadCountKey];
+    [userDefaults setObject:mutedConversationList forKey:mutedConversationListKey];
+    [userDefaults setObject:pinnedConversationList forKey:pinnedConversationListKey];
     [userDefaults setObject:conversationBlacklist forKey:conversationBlacklistKey];
     [userDefaults setObject:conversationWhitelist forKey:conversationWhitelistKey];
 }
 
 static void persistiCloudState() {
     if (!store) return;
+    [store setArray:mutedConversationList forKey:mutedConversationListKey];
+    [store setArray:pinnedConversationList forKey:pinnedConversationListKey];
     [store setArray:conversationBlacklist forKey:conversationBlacklistKey];
     [store setArray:conversationWhitelist forKey:conversationWhitelistKey];
+}
+
+static NSMutableArray *filterConversations(NSArray *conversations, bool updateUnreadCount) {
+    NSMutableArray *pendingKnownArray = [NSMutableArray new];
+    NSMutableArray *knownArray = [NSMutableArray new];
+    NSMutableArray *pendingUnknownArray = [NSMutableArray new];
+    NSMutableArray *unknownArray = [NSMutableArray new];
+    NSUInteger pendingKnownUnreadCount = 0;
+    NSUInteger pendingUnknownUnreadCount = 0;
+    for (CKConversation *conversation in conversations)
+        if (([[conversation chat] hasKnownParticipants] && ![conversation isBlacklisted]) || (![[conversation chat] hasKnownParticipants] && [conversation isWhitelisted])) {
+            pendingKnownUnreadCount += [conversation unreadCount];
+            if ([conversation isPinned]) [knownArray addObject:conversation];
+            else [pendingKnownArray addObject:conversation];
+        } else {
+            pendingUnknownUnreadCount += [conversation unreadCount];
+            if ([conversation isPinned]) [unknownArray addObject:conversation];
+            else [pendingUnknownArray addObject:conversation];
+        }
+    [knownArray sortUsingComparator:^NSComparisonResult(CKConversation* a, CKConversation* b) {
+        return [@([pinnedConversationList indexOfObject:[a uniqueIdentifier]]) compare:@([pinnedConversationList indexOfObject:[b uniqueIdentifier]])];
+    }];
+    [unknownArray sortUsingComparator:^NSComparisonResult(CKConversation* a, CKConversation* b) {
+        return [@([pinnedConversationList indexOfObject:[a uniqueIdentifier]]) compare:@([pinnedConversationList indexOfObject:[b uniqueIdentifier]])];
+    }];
+    [knownArray addObjectsFromArray:pendingKnownArray];
+    [unknownArray addObjectsFromArray:pendingUnknownArray];
+    if (updateUnreadCount) {
+        knownUnreadCount = pendingKnownUnreadCount;
+        unknownUnreadCount = pendingUnknownUnreadCount;
+        updateBadgeCount();
+        [notificationCentre postNotificationUsingPostHandlerWithName:localUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+    }
+    return showUnknownArray ? unknownArray : knownArray;
 }
 
 // Messages Hooks
 
 %group Messages
 %hook CKConversation
++ (BOOL)pinnedConversationsEnabled {
+    return true;
+}
+- (BOOL)isMuted {
+    return [mutedConversationList containsObject:[self uniqueIdentifier]];
+}
+- (void)setMutedUntilDate:(NSDate *)date {
+    [mutedConversationList addObject:[self uniqueIdentifier]];
+    persistDefaultsState();
+    [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+    return %orig;
+}
+- (void)unmute {
+    [mutedConversationList removeObject:[self uniqueIdentifier]];
+    persistDefaultsState();
+    [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+    return %orig;
+}
+- (BOOL)isPinned {
+    return [pinnedConversationList containsObject:[self uniqueIdentifier]];
+}
+- (void)setPinned:(BOOL)pinned {
+    if (pinned) [pinnedConversationList addObject:[self uniqueIdentifier]];
+    else [pinnedConversationList removeObject:[self uniqueIdentifier]];
+    persistDefaultsState();
+    [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+    return %orig;
+}
 %new
 - (void)blacklist {
     [conversationBlacklist addObject:[self uniqueIdentifier]];
+    persistDefaultsState();
+    [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
 }
 %new
 - (void)removeFromBlacklist {
     [conversationBlacklist removeObject:[self uniqueIdentifier]];
+    persistDefaultsState();
+    [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
 }
 %new
 - (BOOL)isBlacklisted {
-    return [conversationBlacklist indexOfObject:[self uniqueIdentifier]] != NSNotFound;
+    return [conversationBlacklist containsObject:[self uniqueIdentifier]];
 }
 %new
 - (void)whitelist {
     [conversationWhitelist addObject:[self uniqueIdentifier]];
+    persistDefaultsState();
+    [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
 }
 %new
 - (void)removeFromWhitelist {
     [conversationWhitelist removeObject:[self uniqueIdentifier]];
+    persistDefaultsState();
+    [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
 }
 %new
 - (BOOL)isWhitelisted {
-    return [conversationWhitelist indexOfObject:[self uniqueIdentifier]] != NSNotFound;
+    return [conversationWhitelist containsObject:[self uniqueIdentifier]];
 }
 %end
 
 %hook CKConversationList
 - (NSMutableArray *)conversations {
-    NSMutableArray *orig = %orig;
-    NSMutableArray *knownArray = [NSMutableArray new];
-    NSMutableArray *unknownArray = [NSMutableArray new];
-    knownUnreadCount = 0;
-    unknownUnreadCount = 0;
-    for (CKConversation *conversation in orig) {
-        if (([[conversation chat] hasKnownParticipants] && ![conversation isBlacklisted]) || (![[conversation chat] hasKnownParticipants] && [conversation isWhitelisted])) {
-            [knownArray addObject:conversation];
-            knownUnreadCount += [conversation unreadCount];
-        } else {
-            [unknownArray addObject:conversation];
-            unknownUnreadCount += [conversation unreadCount];
-        }
-    }
-    updateBadgeCount();
-    [notificationCentre postNotificationUsingPostHandlerWithName:localUpdateNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
-    return showUnknownArray ? unknownArray : knownArray;
+    return filterConversations(%orig, true);
 }
 %end
 
@@ -154,6 +222,9 @@ static void persistiCloudState() {
 - (void)_chatUnreadCountDidChange:(NSNotification *)notification {
     [[self conversationList] conversations];
     return %orig;
+}
+- (NSArray *)activeConversations {
+    return [filterConversations(%orig, false) copy];
 }
 - (void)viewDidLayoutSubviews {
     if (shouldShowButton && !self.navigationItem.leftBarButtonItem) {
@@ -174,12 +245,51 @@ static void persistiCloudState() {
     updateBadgeCount();
     return %orig;
 }
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    CKConversationListStandardCell *cell = (CKConversationListStandardCell *)%orig;
+    if ([[cell conversation] isPinned]) {
+        UIImageView *unreadIndicatorView = [cell valueForKey:@"_unreadIndicatorImageView"];
+        if (unreadIndicatorView) {
+            unreadIndicatorView.tintColor = [UIColor systemOrangeColor];
+            CKUIBehavior *uiBehavior = [%c(CKUIBehavior) sharedBehaviors];
+            if ([[cell conversation] hasUnreadMessages]) {
+                if ([[cell conversation] isMuted]) unreadIndicatorView.image = [[uiBehavior unreadDNDImage] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+                else unreadIndicatorView.image = [[uiBehavior unreadPinnedImage] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+                [UIView animateKeyframesWithDuration:1 delay:0 options:UIViewKeyframeAnimationOptionAutoreverse | UIViewKeyframeAnimationOptionRepeat animations:^{
+                    [UIView addKeyframeWithRelativeStartTime:0 relativeDuration:0.5 animations:^{
+                        unreadIndicatorView.tintColor = [UIColor systemBlueColor];
+                    }];
+                    [UIView addKeyframeWithRelativeStartTime:0.5 relativeDuration:0.5 animations:^{
+                        unreadIndicatorView.tintColor = [UIColor systemOrangeColor];
+                    }];
+                } completion:nil];
+            } else {
+                if ([[cell conversation] isMuted]) unreadIndicatorView.image = [[uiBehavior readDNDImage] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+                else unreadIndicatorView.image = [[uiBehavior readPinnedImage] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+            }
+        }
+    }
+    return cell;
+}
+- (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath *)destinationIndexPath {
+    NSMutableArray *pinnedConversations = [NSMutableArray new];
+    for (CKConversation *conversation in [self activeConversations])
+        if ([conversation isPinned]) [pinnedConversations addObject:conversation];
+    CKConversation *mobileConversation = pinnedConversations[sourceIndexPath.row];
+    [pinnedConversations removeObject:mobileConversation];
+    [pinnedConversations insertObject:mobileConversation atIndex:destinationIndexPath.row];
+    for (CKConversation *conversation in pinnedConversations) {
+        [pinnedConversationList removeObject:[conversation uniqueIdentifier]];
+        [conversation setPinned:true];
+    }
+    return %orig;
+}
 %new
 - (UISwipeActionsConfiguration *)tableView:(UITableView *)tableView leadingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath {
-    CKConversationListCell *cell = (CKConversationListCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
+    CKConversationListStandardCell *cell = (CKConversationListStandardCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
     CKConversation *conversation = [cell conversation];
     CKEntity *recipient = [conversation recipient];
-    UIContextualAction *blacklistAction = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleDestructive title:([[conversation chat] hasKnownParticipants] && [conversation isBlacklisted]) || (![[conversation chat] hasKnownParticipants] && ![conversation isWhitelisted]) ? @"Unhide" : @"Hide" handler:^(UIContextualAction * _Nonnull action, __kindof UIView * _Nonnull sourceView, void (^ _Nonnull completionHandler)(BOOL)) {
+    UIContextualAction *hideUnhideAction = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleDestructive title:([[conversation chat] hasKnownParticipants] && [conversation isBlacklisted]) || (![[conversation chat] hasKnownParticipants] && ![conversation isWhitelisted]) ? @"Unhide" : @"Hide" handler:^(UIContextualAction * _Nonnull action, __kindof UIView * _Nonnull sourceView, void (^ _Nonnull completionHandler)(BOOL)) {
         if ([[conversation chat] hasKnownParticipants]) {
             if ([conversation isBlacklisted]) [conversation removeFromBlacklist];
             else [conversation blacklist];
@@ -187,14 +297,14 @@ static void persistiCloudState() {
             if ([conversation isWhitelisted]) [conversation removeFromWhitelist];
             else [conversation whitelist];
         }
-        [self updateConversationList];
-        persistDefaultsState();
-        [notificationCentre postNotificationWithName:iCloudPersistNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+        [self.tableView beginUpdates];
+        [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+        [self.tableView endUpdates];
         completionHandler(true);
     }];
-    blacklistAction.backgroundColor = [conversation isBlacklisted] || (![[conversation chat] hasKnownParticipants] && ![conversation isWhitelisted]) ? [UIColor systemTealColor] : [UIColor systemBlueColor];
+    hideUnhideAction.backgroundColor = [conversation isBlacklisted] || (![[conversation chat] hasKnownParticipants] && ![conversation isWhitelisted]) ? [UIColor systemTealColor] : [UIColor systemBlueColor];
     NSMutableArray *actions = [NSMutableArray new];
-    [actions addObject:blacklistAction];
+    [actions addObject:hideUnhideAction];
     if (recipient && [[recipient cnContact] handles].count != 0) {
         CNContactToggleBlockCallerAction *cnBlockAction = [[%c(CNContactToggleBlockCallerAction) alloc] initWithContact:[recipient cnContact]];
         UIContextualAction *blockAction = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleNormal title:[cnBlockAction isBlocked] ? @"Unblock" : @"Block" handler:^(UIContextualAction * _Nonnull action, __kindof UIView * _Nonnull sourceView, void (^ _Nonnull completionHandler)(BOOL)) {
@@ -202,7 +312,7 @@ static void persistiCloudState() {
             else [cnBlockAction block];
             completionHandler(true);
         }];
-        blockAction.backgroundColor = [cnBlockAction isBlocked] ? [UIColor systemPurpleColor] : [UIColor systemOrangeColor];
+        blockAction.backgroundColor = [UIColor systemRedColor];
         [actions addObject:blockAction];
     }
     return [UISwipeActionsConfiguration configurationWithActions:actions];
@@ -276,15 +386,17 @@ static void persistiCloudState() {
 %group SpringBoard
 %hook SpringBoard
 - (BOOL)_handlePhysicalButtonEvent:(UIPressesEvent *)event {
-    bool containsVolumeUp = false;
-    bool containsVolumeDown = false;
-    for (UIPress *press in event.allPresses)
-        if (press.force == 1) {
-            if (!containsVolumeUp) containsVolumeUp = press.type == 102;
-            if (!containsVolumeDown) containsVolumeDown = press.type == 103;
-        }
-    if (containsVolumeUp && containsVolumeDown && notificationCentre)
-        [notificationCentre postNotificationWithName:toggleShowUnknownArrayNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+    if (shouldToggleWhenVolumePressedSimultaneously) {
+        bool containsVolumeUp = false;
+        bool containsVolumeDown = false;
+        for (UIPress *press in event.allPresses)
+            if (press.force == 1) {
+                if (!containsVolumeUp) containsVolumeUp = press.type == 102;
+                if (!containsVolumeDown) containsVolumeDown = press.type == 103;
+            }
+        if (containsVolumeUp && containsVolumeDown && notificationCentre)
+            [notificationCentre postNotificationWithName:toggleShowUnknownArrayNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
+    }
     return %orig;
 }
 - (void)_ringerChanged:(void *)event {
@@ -316,6 +428,7 @@ static void persistiCloudState() {
         shouldHideUnknownUnreadCountFromSBBadge = [settings objectForKey:shouldHideUnknownUnreadCountFromSBBadgeKey] && [[settings objectForKey:shouldHideUnknownUnreadCountFromSBBadgeKey] boolValue];
         shouldHideButtonBadge = [settings objectForKey:shouldHideButtonBadgeKey] && [[settings objectForKey:shouldHideButtonBadgeKey] boolValue];
         shouldSecureUnknownList = [settings objectForKey:shouldSecureUnknownListKey] && [[settings objectForKey:shouldSecureUnknownListKey] boolValue];
+        shouldAutoHideUnknownList = [settings objectForKey:shouldAutoHideUnknownListKey] && [[settings objectForKey:shouldAutoHideUnknownListKey] boolValue];
     }
 
     if ([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.tccd"]) %init(TCCd);
@@ -336,7 +449,14 @@ static void persistiCloudState() {
                 return nil;
             };
             notificationCentre.receivedHandler = ^(NSNotification *notification) {
-                if ([notification.name isEqualToString:toggleShowUnknownArrayNotificationName]) {
+                if ([notification.name isEqualToString:UIApplicationWillEnterForegroundNotification]) {
+                    if (ckclc) [ckclc.tableView reloadData];
+                } else if ([notification.name isEqualToString:UIApplicationDidEnterBackgroundNotification]) {
+                    if (shouldAutoHideUnknownList) {
+                        showUnknownArray = false;
+                        if (ckclc) [ckclc updateConversationList];
+                    }
+                } else if ([notification.name isEqualToString:toggleShowUnknownArrayNotificationName]) {
                     if (ckclc && [UIApplication sharedApplication].applicationState == UIApplicationStateActive)
                         [ckclc toggleShowUnknownArray];
                 } else if ([notification.name isEqualToString:localRequestNotificationName]) {
@@ -346,6 +466,8 @@ static void persistiCloudState() {
                     if (ckclc) [ckclc updateConversationList];
                 }
             };
+            [notificationCentre observeNotificationsWithName:UIApplicationWillEnterForegroundNotification from:[NSNotificationCenter defaultCenter]];
+            [notificationCentre observeNotificationsWithName:UIApplicationDidEnterBackgroundNotification from:[NSNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:toggleShowUnknownArrayNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:localRequestNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:userDefaultsDidUpdateNotificationName from:[NSDistributedNotificationCenter defaultCenter]];

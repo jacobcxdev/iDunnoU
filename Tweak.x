@@ -247,6 +247,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
 }
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     CKConversationListStandardCell *cell = (CKConversationListStandardCell *)%orig;
+    if (![cell isKindOfClass:%c(CKConversationListStandardCell)]) return cell;
     if ([[cell conversation] isPinned]) {
         UIImageView *unreadIndicatorView = [cell valueForKey:@"_unreadIndicatorImageView"];
         if (unreadIndicatorView) {

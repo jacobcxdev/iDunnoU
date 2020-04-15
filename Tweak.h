@@ -62,11 +62,16 @@
 - (UIImage *)unreadPinnedImage;
 @end
 
+@interface CKMessagesController : UIViewController
+- (void)showConversationList:(BOOL)clearChatControllers;
+@end
+
 @interface CKConversationListController : UITableViewController<UITableViewDelegate, UITableViewDataSource>
 - (void)_chatUnreadCountDidChange:(NSNotification *)notification;
 - (void)_toggleShowUnknownArray;
 - (NSArray *)activeConversations;
 - (CKConversationList *)conversationList;
+- (CKMessagesController *)messagesController;
 - (void)toggleShowUnknownArray;
 - (void)updateConversationList;
 @end

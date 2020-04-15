@@ -29,6 +29,9 @@ static NSString *shouldAutoHideUnknownListKey = @"shouldAutoHideUnknownList";
 static bool showUnknownArray = false;
 static NSString *showUnknownArrayKey = @"showUnknownArray";
 
+static UIWindow *blurWindow;
+static bool shouldHideCurrentConversation = false;
+
 static NSUInteger knownUnreadCount = 0;
 static NSString *knownUnreadCountKey = @"knownUnreadCount";
 static NSUInteger unknownUnreadCount = 0;
@@ -450,11 +453,45 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
                 return nil;
             };
             notificationCentre.receivedHandler = ^(NSNotification *notification) {
-                if ([notification.name isEqualToString:UIApplicationWillEnterForegroundNotification]) {
-                    if (ckclc) [ckclc.tableView reloadData];
+                if ([notification.name isEqualToString:UIApplicationDidBecomeActiveNotification]) {
+                    if (blurWindow && !blurWindow.hidden) {
+                        [UIView animateWithDuration:0.25 animations:^{
+                            blurWindow.alpha = 0;
+                        } completion:^(BOOL finished){
+                            blurWindow.hidden = true;
+                        }];
+                    }
+                } else if ([notification.name isEqualToString:UIApplicationWillEnterForegroundNotification]) {
+                    if (ckclc) {
+                        [ckclc.tableView reloadData];
+                        if (shouldHideCurrentConversation) {
+                            shouldHideCurrentConversation = false;
+                            [[ckclc messagesController] showConversationList:true];
+                        }
+                    }
+                } else if ([notification.name isEqualToString:UIApplicationWillResignActiveNotification]) {
+                    if (shouldAutoHideUnknownList && showUnknownArray) {
+                        if (!blurWindow) {
+                            UIWindowScene *scene = (UIWindowScene *)[UIApplication.sharedApplication.connectedScenes.allObjects firstObject];
+                            if (!scene) return;
+                            blurWindow = [[UIWindow alloc] initWithWindowScene:scene];
+                            blurWindow.frame = UIScreen.mainScreen.bounds;
+                            blurWindow.windowLevel = UIWindowLevelAlert;
+                            blurWindow.alpha = 0;
+                            UIVisualEffectView *blurEffectView = [[UIVisualEffectView alloc] initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleSystemChromeMaterial]];
+                            blurEffectView.frame = blurWindow.frame;
+                            [blurWindow addSubview:blurEffectView];
+                        }
+                        blurWindow.hidden = false;
+                        [UIView animateWithDuration:0.25 animations:^{
+                            blurWindow.alpha = 1;
+                        }];
+                        [blurWindow makeKeyAndVisible];
+                    }
                 } else if ([notification.name isEqualToString:UIApplicationDidEnterBackgroundNotification]) {
-                    if (shouldAutoHideUnknownList) {
+                    if (shouldAutoHideUnknownList && showUnknownArray) {
                         showUnknownArray = false;
+                        shouldHideCurrentConversation = true;
                         if (ckclc) [ckclc updateConversationList];
                     }
                 } else if ([notification.name isEqualToString:toggleShowUnknownArrayNotificationName]) {
@@ -467,7 +504,9 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
                     if (ckclc) [ckclc updateConversationList];
                 }
             };
+            [notificationCentre observeNotificationsWithName:UIApplicationDidBecomeActiveNotification from:[NSNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:UIApplicationWillEnterForegroundNotification from:[NSNotificationCenter defaultCenter]];
+            [notificationCentre observeNotificationsWithName:UIApplicationWillResignActiveNotification from:[NSNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:UIApplicationDidEnterBackgroundNotification from:[NSNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:toggleShowUnknownArrayNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre observeNotificationsWithName:localRequestNotificationName from:[NSDistributedNotificationCenter defaultCenter]];

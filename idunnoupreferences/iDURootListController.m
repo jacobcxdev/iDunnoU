@@ -3,7 +3,7 @@
 @implementation iDURootListController
 - (void)viewDidLoad {
     [super viewDidLoad];
-    UIBarButtonItem *button = [[UIBarButtonItem alloc] initWithTitle:@"Respring" style:UIBarButtonItemStylePlain target:self action:@selector(killall)];
+    UIBarButtonItem *button = [[UIBarButtonItem alloc] initWithTitle:@"Apply" style:UIBarButtonItemStylePlain target:self action:@selector(killall)];
     self.navigationItem.rightBarButtonItem = button;
 }
 - (void)killall {

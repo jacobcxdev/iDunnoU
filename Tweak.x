@@ -24,12 +24,17 @@ static bool shouldHideButtonBadge = false;
 static NSString *shouldHideButtonBadgeKey = @"shouldHideButtonBadge";
 static bool shouldSecureUnknownList = false;
 static NSString *shouldSecureUnknownListKey = @"shouldSecureUnknownList";
+static bool shouldShowButtonAfterAuthentication = false;
+static NSString *shouldShowButtonAfterAuthenticationKey = @"shouldShowButtonAfterAuthentication";
 static bool shouldAutoHideUnknownList = false;
 static NSString *shouldAutoHideUnknownListKey = @"shouldAutoHideUnknownList";
+static bool shouldHideSwipeActions = false;
+static NSString *shouldHideSwipeActionsKey = @"shouldHideSwipeActions";
 static bool showUnknownArray = false;
 static NSString *showUnknownArrayKey = @"showUnknownArray";
 
 static UIWindow *blurWindow;
+static bool isAuthenticated = false;
 static bool shouldHideCurrentConversation = false;
 
 static NSUInteger knownUnreadCount = 0;
@@ -230,7 +235,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
     return [filterConversations(%orig, false) copy];
 }
 - (void)viewDidLayoutSubviews {
-    if (shouldShowButton && !self.navigationItem.leftBarButtonItem) {
+    if (!self.navigationItem.leftBarButtonItem) {
         if (!bbi) {
             if (!button) {
                 button = [iDUBadgeButton buttonWithType:UIButtonTypeCustom];
@@ -240,6 +245,8 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
                 button.backgroundColor = [UIColor secondarySystemFillColor];
                 button.frame = CGRectMake(0, 0, 30, 30);
                 button.layer.cornerRadius = 15;
+                button.alpha = shouldShowButton ? 1 : 0;
+                button.hidden = !shouldShowButton;
             }
             bbi = [[UIBarButtonItem alloc] initWithCustomView:button];
         }
@@ -290,6 +297,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
 }
 %new
 - (UISwipeActionsConfiguration *)tableView:(UITableView *)tableView leadingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (shouldHideSwipeActions) return nil;
     CKConversationListStandardCell *cell = (CKConversationListStandardCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
     CKConversation *conversation = [cell conversation];
     CKEntity *recipient = [conversation recipient];
@@ -327,21 +335,35 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
 }
 %new
 - (void)toggleShowUnknownArray {
-    if (shouldSecureUnknownList && !showUnknownArray) {
+    if (shouldSecureUnknownList && !isAuthenticated && !showUnknownArray) {
         LAContext *context = [LAContext new];
         NSError *error = nil;
         if ([context canEvaluatePolicy:LAPolicyDeviceOwnerAuthentication error:&error])
             [context evaluatePolicy:LAPolicyDeviceOwnerAuthentication localizedReason:@"iDunnoU" reply:^(BOOL success, NSError *error) {
                 if (success) dispatch_async(dispatch_get_main_queue(), ^{
+                    isAuthenticated = true;
                     [self _toggleShowUnknownArray];
                 });
             }];
     } else [self _toggleShowUnknownArray];
 }
 %new
+- (void)setButtonHidden:(bool)hidden {
+    if (!button || button.hidden == hidden) return;
+    if (button.hidden) button.hidden = false;
+    [UIView animateWithDuration:0.25 animations:^{
+        button.alpha = hidden ? 0 : 1;
+    } completion:^(BOOL finished) {
+        button.hidden = hidden;
+    }];
+}
+%new
 - (void)_toggleShowUnknownArray {
     showUnknownArray = !showUnknownArray;
-    if (button) button.selected = showUnknownArray;
+    if (button) {
+        button.selected = showUnknownArray;
+        if (shouldShowButtonAfterAuthentication) [self setButtonHidden:false];
+    }
     [self updateConversationList];
     persistDefaultsState();
 }
@@ -432,7 +454,9 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
         shouldHideUnknownUnreadCountFromSBBadge = [settings objectForKey:shouldHideUnknownUnreadCountFromSBBadgeKey] && [[settings objectForKey:shouldHideUnknownUnreadCountFromSBBadgeKey] boolValue];
         shouldHideButtonBadge = [settings objectForKey:shouldHideButtonBadgeKey] && [[settings objectForKey:shouldHideButtonBadgeKey] boolValue];
         shouldSecureUnknownList = [settings objectForKey:shouldSecureUnknownListKey] && [[settings objectForKey:shouldSecureUnknownListKey] boolValue];
+        shouldShowButtonAfterAuthentication = [settings objectForKey:shouldShowButtonAfterAuthenticationKey] && [[settings objectForKey:shouldShowButtonAfterAuthenticationKey] boolValue];
         shouldAutoHideUnknownList = [settings objectForKey:shouldAutoHideUnknownListKey] && [[settings objectForKey:shouldAutoHideUnknownListKey] boolValue];
+        shouldHideSwipeActions = [settings objectForKey:shouldHideSwipeActionsKey] && [[settings objectForKey:shouldHideSwipeActionsKey] boolValue];
     }
 
     if ([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.tccd"]) %init(TCCd);
@@ -469,8 +493,9 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
                             [[ckclc messagesController] showConversationList:true];
                         }
                     }
+                    if (ckclc && !shouldShowButton) [ckclc setButtonHidden:true];
                 } else if ([notification.name isEqualToString:UIApplicationWillResignActiveNotification]) {
-                    if (shouldAutoHideUnknownList && showUnknownArray) {
+                    if ((shouldSecureUnknownList || shouldAutoHideUnknownList) && showUnknownArray) {
                         if (!blurWindow) {
                             UIWindowScene *scene = (UIWindowScene *)[UIApplication.sharedApplication.connectedScenes.allObjects firstObject];
                             if (!scene) return;
@@ -489,6 +514,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
                         [blurWindow makeKeyAndVisible];
                     }
                 } else if ([notification.name isEqualToString:UIApplicationDidEnterBackgroundNotification]) {
+                    isAuthenticated = false;
                     if (shouldAutoHideUnknownList && showUnknownArray) {
                         showUnknownArray = false;
                         shouldHideCurrentConversation = true;

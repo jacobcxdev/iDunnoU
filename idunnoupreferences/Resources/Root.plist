@@ -173,6 +173,26 @@
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
+            <key>label</key>
+            <string>Security Preferences</string>
+            <key>footerText</key>
+            <string>Temporarily show the iDunnoU button after having authenticated successfully. The iDunnoU button will hide again when messages enters the background.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.idunnou</string>
+            <key>key</key>
+            <string>shouldShowButtonAfterAuthentication</string>
+            <key>label</key>
+            <string>Show iDunnoU Button after Authentication</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
             <key>footerText</key>
             <string>Automatically hide the unknown sender list when Messages enters the background.</string>
         </dict>

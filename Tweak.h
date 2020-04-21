@@ -72,6 +72,7 @@
 - (NSArray *)activeConversations;
 - (CKConversationList *)conversationList;
 - (CKMessagesController *)messagesController;
+- (void)setButtonHidden:(bool)hidden;
 - (void)toggleShowUnknownArray;
 - (void)updateConversationList;
 @end

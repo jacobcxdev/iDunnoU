@@ -26,6 +26,8 @@ static bool shouldSecureUnknownList = false;
 static NSString *shouldSecureUnknownListKey = @"shouldSecureUnknownList";
 static bool shouldAutoHideUnknownList = false;
 static NSString *shouldAutoHideUnknownListKey = @"shouldAutoHideUnknownList";
+static bool shouldHideSwipeActions = false;
+static NSString *shouldHideSwipeActionsKey = @"shouldHideSwipeActions";
 static bool showUnknownArray = false;
 static NSString *showUnknownArrayKey = @"showUnknownArray";
 
@@ -290,6 +292,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
 }
 %new
 - (UISwipeActionsConfiguration *)tableView:(UITableView *)tableView leadingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (shouldHideSwipeActions) return nil;
     CKConversationListStandardCell *cell = (CKConversationListStandardCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
     CKConversation *conversation = [cell conversation];
     CKEntity *recipient = [conversation recipient];
@@ -433,6 +436,7 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
         shouldHideButtonBadge = [settings objectForKey:shouldHideButtonBadgeKey] && [[settings objectForKey:shouldHideButtonBadgeKey] boolValue];
         shouldSecureUnknownList = [settings objectForKey:shouldSecureUnknownListKey] && [[settings objectForKey:shouldSecureUnknownListKey] boolValue];
         shouldAutoHideUnknownList = [settings objectForKey:shouldAutoHideUnknownListKey] && [[settings objectForKey:shouldAutoHideUnknownListKey] boolValue];
+        shouldHideSwipeActions = [settings objectForKey:shouldHideSwipeActionsKey] && [[settings objectForKey:shouldHideSwipeActionsKey] boolValue];
     }
 
     if ([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.tccd"]) %init(TCCd);

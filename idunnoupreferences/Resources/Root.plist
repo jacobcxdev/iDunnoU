@@ -191,6 +191,24 @@
         <dict>
             <key>cell</key>
             <string>PSGroupCell</string>
+            <key>footerText</key>
+            <string>Hide the leading swipe actions which are added by iDunnoU.</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSSwitchCell</string>
+            <key>default</key>
+            <false/>
+            <key>defaults</key>
+            <string>com.jacobcxdev.idunnou</string>
+            <key>key</key>
+            <string>shouldHideSwipeActions</string>
+            <key>label</key>
+            <string>Hide Swipe Actions</string>
+        </dict>
+        <dict>
+            <key>cell</key>
+            <string>PSGroupCell</string>
             <key>label</key>
             <string>Developer</string>
             <key>footerText</key>

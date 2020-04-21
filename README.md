@@ -1,4 +1,4 @@
-![banner](https://user-images.githubusercontent.com/27970288/79167266-03041680-7ddf-11ea-986c-cc087f5be5c6.png)
+![banner](https://user-images.githubusercontent.com/27970288/79824327-edb65b80-838d-11ea-80c0-8a7dfebc06aa.png)
 
 # iDunnoU
 Ever think *'iDunnoU?'*. Use this tweak to pin, hide, secure, and block conversations like clockwork.
@@ -29,7 +29,9 @@ Ever think *'iDunnoU?'*. Use this tweak to pin, hide, secure, and block conversa
 
 ### Security Preferences
 * Secure Unknown Sender List
+* Show iDunnoU Button after Authentication
 * Auto-Hide Unknown Sender List
+* Hide Swipe Actions
 
 ## Donate
 If you would like to donate to me, please donate [via PayPal](https://paypal.me/jacobcxdev) — it really helps!
@@ -40,5 +42,5 @@ If you would like to donate to me, please donate [via PayPal](https://paypal.me/
 ![Edit Mode](https://user-images.githubusercontent.com/27970288/79169368-2da49e00-7de4-11ea-99f5-d7c9a24744af.png)
 ![Face ID](https://user-images.githubusercontent.com/27970288/79169378-31d0bb80-7de4-11ea-8a50-2aed2d257e2d.png)
 ![Unknown List](https://user-images.githubusercontent.com/27970288/79169384-35fcd900-7de4-11ea-8f75-f0aadd9e8e30.png)
-![Preferences 1](https://user-images.githubusercontent.com/27970288/79167296-10210580-7ddf-11ea-86d6-338140ad7ac3.png)
-![Preferences 2](https://user-images.githubusercontent.com/27970288/79168179-23cd6b80-7de1-11ea-8407-363f96e61abf.png)
+![Preferences 1](https://user-images.githubusercontent.com/27970288/79824330-f1e27900-838d-11ea-8d5c-00f22a71617a.png)
+![Preferences 2](https://user-images.githubusercontent.com/27970288/79824675-b98f6a80-838e-11ea-86b1-b02de45dac56.png)

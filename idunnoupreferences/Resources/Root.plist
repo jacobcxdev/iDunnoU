@@ -9,13 +9,15 @@
             <string>JCXGradientHeaderCell</string>
             <key>subtitle</key>
             <string>By {Author} — v{Version}</string>
+            <key>textColour</key>
+            <string>#FFFFFF</string>
             <key>prefsBundle</key>
             <string>com.jacobcxdev.idunnou.preferences</string>
             <key>tweakBundle</key>
             <string>com.jacobcxdev.idunnou</string>
             <key>icon</key>
             <string>icon-stamp.png</string>
-            <key>colors</key>
+            <key>colours</key>
             <string>#04BE26,#40D35B,#64E27C,#7CF190,#96F9A7</string>
             <key>animated</key>
             <true/>

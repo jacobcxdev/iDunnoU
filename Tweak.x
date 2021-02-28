@@ -149,7 +149,65 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
     return showUnknownArray ? unknownArray : knownArray;
 }
 
+static UISwipeActionsConfiguration *tableViewLeadingSwipeActionsConfigurationForRowAtIndexPath(CKConversationListController *self, UITableView *tableView, NSIndexPath *indexPath) {
+    if (shouldHideSwipeActions) return nil;
+    CKConversationListStandardCell *cell = (CKConversationListStandardCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
+    CKConversation *conversation = [cell conversation];
+    CKEntity *recipient = [conversation recipient];
+    UIContextualAction *hideUnhideAction = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleDestructive title:([[conversation chat] hasKnownParticipants] && [conversation isBlacklisted]) || (![[conversation chat] hasKnownParticipants] && ![conversation isWhitelisted]) ? @"Unhide" : @"Hide" handler:^(UIContextualAction * _Nonnull action, __kindof UIView * _Nonnull sourceView, void (^ _Nonnull completionHandler)(BOOL)) {
+        if ([[conversation chat] hasKnownParticipants]) {
+            if ([conversation isBlacklisted]) [conversation removeFromBlacklist];
+            else [conversation blacklist];
+        } else {
+            if ([conversation isWhitelisted]) [conversation removeFromWhitelist];
+            else [conversation whitelist];
+        }
+        [self.tableView beginUpdates];
+        [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+        [self.tableView endUpdates];
+        completionHandler(true);
+    }];
+    hideUnhideAction.backgroundColor = [conversation isBlacklisted] || (![[conversation chat] hasKnownParticipants] && ![conversation isWhitelisted]) ? [UIColor systemTealColor] : [UIColor systemBlueColor];
+    NSMutableArray *actions = [NSMutableArray new];
+    [actions addObject:hideUnhideAction];
+    if (recipient && [[recipient cnContact] handles].count != 0) {
+        CNContactToggleBlockCallerAction *cnBlockAction = [[%c(CNContactToggleBlockCallerAction) alloc] initWithContact:[recipient cnContact]];
+        UIContextualAction *blockAction = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleNormal title:[cnBlockAction isBlocked] ? @"Unblock" : @"Block" handler:^(UIContextualAction * _Nonnull action, __kindof UIView * _Nonnull sourceView, void (^ _Nonnull completionHandler)(BOOL)) {
+            if ([cnBlockAction isBlocked]) [cnBlockAction unblock];
+            else [cnBlockAction block];
+            completionHandler(true);
+        }];
+        blockAction.backgroundColor = [UIColor systemRedColor];
+        [actions addObject:blockAction];
+    }
+    return [UISwipeActionsConfiguration configurationWithActions:actions];
+}
+
 // Messages Hooks
+
+%group Messages_LeadingSwipeActionsExist
+%hook CKConversationListController
+- (UISwipeActionsConfiguration *)tableView:(UITableView *)tableView leadingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath {
+    UISwipeActionsConfiguration *orig = %orig;
+    UISwipeActionsConfiguration *config = tableViewLeadingSwipeActionsConfigurationForRowAtIndexPath(self, tableView, indexPath);
+    if (!config) return orig;
+    NSMutableArray *actions = [config.actions mutableCopy];
+    if (orig) {
+        [actions addObjectsFromArray:orig.actions];
+    }
+    return [UISwipeActionsConfiguration configurationWithActions:actions];
+}
+%end
+%end
+
+%group Messages_LeadingSwipeActionsDoNotExist
+%hook CKConversationListController
+%new
+- (UISwipeActionsConfiguration *)tableView:(UITableView *)tableView leadingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath {
+    return tableViewLeadingSwipeActionsConfigurationForRowAtIndexPath(self, tableView, indexPath);
+}
+%end
+%end
 
 %group Messages
 %hook CKConversation
@@ -294,40 +352,6 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
         [conversation setPinned:true];
     }
     return %orig;
-}
-%new
-- (UISwipeActionsConfiguration *)tableView:(UITableView *)tableView leadingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (shouldHideSwipeActions) return nil;
-    CKConversationListStandardCell *cell = (CKConversationListStandardCell *)[self tableView:tableView cellForRowAtIndexPath:indexPath];
-    CKConversation *conversation = [cell conversation];
-    CKEntity *recipient = [conversation recipient];
-    UIContextualAction *hideUnhideAction = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleDestructive title:([[conversation chat] hasKnownParticipants] && [conversation isBlacklisted]) || (![[conversation chat] hasKnownParticipants] && ![conversation isWhitelisted]) ? @"Unhide" : @"Hide" handler:^(UIContextualAction * _Nonnull action, __kindof UIView * _Nonnull sourceView, void (^ _Nonnull completionHandler)(BOOL)) {
-        if ([[conversation chat] hasKnownParticipants]) {
-            if ([conversation isBlacklisted]) [conversation removeFromBlacklist];
-            else [conversation blacklist];
-        } else {
-            if ([conversation isWhitelisted]) [conversation removeFromWhitelist];
-            else [conversation whitelist];
-        }
-        [self.tableView beginUpdates];
-        [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
-        [self.tableView endUpdates];
-        completionHandler(true);
-    }];
-    hideUnhideAction.backgroundColor = [conversation isBlacklisted] || (![[conversation chat] hasKnownParticipants] && ![conversation isWhitelisted]) ? [UIColor systemTealColor] : [UIColor systemBlueColor];
-    NSMutableArray *actions = [NSMutableArray new];
-    [actions addObject:hideUnhideAction];
-    if (recipient && [[recipient cnContact] handles].count != 0) {
-        CNContactToggleBlockCallerAction *cnBlockAction = [[%c(CNContactToggleBlockCallerAction) alloc] initWithContact:[recipient cnContact]];
-        UIContextualAction *blockAction = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleNormal title:[cnBlockAction isBlocked] ? @"Unblock" : @"Block" handler:^(UIContextualAction * _Nonnull action, __kindof UIView * _Nonnull sourceView, void (^ _Nonnull completionHandler)(BOOL)) {
-            if ([cnBlockAction isBlocked]) [cnBlockAction unblock];
-            else [cnBlockAction block];
-            completionHandler(true);
-        }];
-        blockAction.backgroundColor = [UIColor systemRedColor];
-        [actions addObject:blockAction];
-    }
-    return [UISwipeActionsConfiguration configurationWithActions:actions];
 }
 %new
 - (void)motionEnded:(UIEventSubtype)motion withEvent:(UIEvent *)event {
@@ -539,6 +563,11 @@ static NSMutableArray *filterConversations(NSArray *conversations, bool updateUn
             [notificationCentre observeNotificationsWithName:userDefaultsDidUpdateNotificationName from:[NSDistributedNotificationCenter defaultCenter]];
             [notificationCentre postNotificationWithName:iCloudRestoreNotificationName to:[NSDistributedNotificationCenter defaultCenter]];
             %init(Messages);
+            if ([%c(CKConversationListController) instancesRespondToSelector:@selector(tableView:leadingSwipeActionsConfigurationForRowAtIndexPath:)]) {
+                %init(Messages_LeadingSwipeActionsExist);
+            } else {
+                %init(Messages_LeadingSwipeActionsDoNotExist);
+            }
         } else if ([mainBundleID isEqualToString:@"com.apple.imagent"]) {
             userDefaults = [[NSUserDefaults alloc] initWithSuiteName:@"com.apple.MobileSMS"];
             notificationCentre.receivedHandler = ^(NSNotification *notification) {
